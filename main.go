@@ -16,7 +16,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func StaticFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
-
+func Register(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "tmpl/Register.html")
+}
 func imgFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
@@ -24,6 +26,7 @@ func imgFiles(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/home", Home)
 	http.HandleFunc("/login", Login)
+	http.HandleFunc("/register", Register)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", imgFiles)
 

@@ -14,11 +14,12 @@ body{
     background: url('../img/vinyl.jpg');
     background-repeat: no-repeat;
     background-size: cover;
+    background-position: center;
 }
 
 .wrapper{
     width :420px;
-    background: black;
+    background: rgba(0, 0, 0, 0);
     color: #fff;
     border-radius: 10px;
     padding:30px 40px;

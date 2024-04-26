@@ -6,6 +6,7 @@
     <title>Log</title>
     <link href="../static/login.css" rel ="stylesheet">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../static/navbar.css">
 </head>
 <body>
     <div class="wrapper">
@@ -17,21 +18,35 @@
 
             </div>
             <div class="input-box">
-                <input type ="password" placeholder="password" required>
+                <input type ="password" placeholder="Password" required>
                 <i class='bx bxs-lock-alt' ></i>
             </div>
             <div class="remember-forgot">
-                <label><input type="checkbox"> remember-forgot
-                </label>
-                <a href="#">Forgot password?</a>                
+                <label><input type="checkbox"> remember-me
+                </label>              
             </div>
 
             <button type="submit" class="btn">Login</button>
 
             <div class="registe-link">
-                <p>No account? <a href="#">Register</a></p>
+                <p>No account? <a href="register">register</a></p>
             </div>
         </form>
     </div>
+    <nav class="navbar">
+        <a href="#" class="logo">FORUM</a>
+        <div class="nav-links">
+            <ul>
+                <li><a href="home">Home</a></li>
+                <li><a href="login">Login</a></li>
+                <li><a href="categories">Catégories</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </div>
+        <div class="menumobile">
+        </div>
+        <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
+    </nav>
+    <header></header>
 </body>
 </html>
