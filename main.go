@@ -27,6 +27,6 @@ func main() {
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", imgFiles)
 
-	fmt.Print("http://localhost:8081/")
+	fmt.Print("http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
 }
