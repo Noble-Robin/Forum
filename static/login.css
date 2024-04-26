@@ -11,9 +11,7 @@ body{
     justify-content: center;
     align-items: center;
     min-height:100vh;
-    background: url('../img/vinyl.jpg');
-    background-repeat: no-repeat;
-    background-size: cover;
+    background-color: rgba(152, 25, 25, 0.523);
     background-position: center;
 }
 
@@ -113,4 +111,17 @@ body{
 
 .register-link p a:hover {
     text-decoration: underline;
+}
+
+.wrapper .backhome{
+    font-size: 14.5px;
+    text-align: center;
+    margin-top: 20px;
+
+}
+@media screen and (max-width: 900px){
+    .wrapper{
+        width: 100%;
+        position: absolute;
+    }
 }

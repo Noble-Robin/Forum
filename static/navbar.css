@@ -58,14 +58,10 @@ header{
     width: 35px;
     top: 50px;
     right: 50px;
-    z-index: 1;
-
 }
 
 .mobile-menu{
-    margin-left: 0;
-    
-
+    margin-left: 0;  
 }
 @media screen and (max-width: 900px){
     .navbar {

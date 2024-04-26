@@ -26,19 +26,21 @@
                 </label>              
             </div>
 
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn">login</button>
 
             <div class="registe-link">
                 <p>No account? <a href="register">register</a></p>
             </div>
+            <div class="backhome">
+                <a href="home">Go back Home</a>
+            </div>
         </form>
     </div>
     <nav class="navbar">
-        <a href="#" class="logo">FORUM</a>
+        <a href="home" class="logo">FORUM</a>
         <div class="nav-links">
             <ul>
                 <li><a href="home">Home</a></li>
-                <li><a href="login">Login</a></li>
                 <li><a href="categories">Catégories</a></li>
                 <li><a href="#">Contact</a></li>
             </ul>
@@ -47,6 +49,16 @@
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
+    <div style="display: none;">
+    </div>
     <header></header>
 </body>
+<script>
+    const menuHamburger = document.querySelector(".menu-hamburger"); 
+    const navLinks = document.querySelector(".nav-links");
+
+    menuHamburger.addEventListener('click', () => {
+        navLinks.classList.toggle('mobile-menu');
+    });
+</script>
 </html>
