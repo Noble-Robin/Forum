@@ -52,6 +52,7 @@ header{
     margin: 0 30px;
 }
 
+
 .navbar .menu-hamburger{
     display: none;
     position: absolute;
@@ -64,6 +65,7 @@ header{
     margin-left: 0;  
 }
 @media screen and (max-width: 900px){
+
     .navbar {
         padding: 0;
     }
@@ -110,5 +112,10 @@ header{
     .navbar .nav-links ul li{
         margin: 25px 0;
         font-size: 1.2em;
+
     }
+    .navbar .nav-links ul li.active a{
+    color: rgb(0, 0, 0);
+}
+
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	// "database/sql"
 	"fmt"
 	"net/http"
 )
@@ -26,10 +26,10 @@ func imgFiles(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	db, err :=sql.Open("sqlite3", "database.db")
-	if err != nil {
-		panic(err.Error())
-	}
+	// db, err :=sql.Open("sqlite3", "database.db")
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
 	http.HandleFunc("/home", Home)
 	http.HandleFunc("/login", Login)
 	http.HandleFunc("/register", Register)
