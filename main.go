@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -52,19 +51,19 @@ func main() {
 	}
 	defer db.Close()
 
-	files := []string{"User.sql", "conversation.sql", "contact.sql", "message.sql", "group.sql"}
-	for _, file := range files {
-		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-		if err != nil {
-			log.Fatal(err)
-		}
+	//files := []string{"User.sql", "conversation.sql", "contact.sql", "message.sql", "group.sql"}
+	//for _, file := range files {
+	//	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
 
-		_, err = db.Exec(string(sqlFile))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("File %s executed successfully", file)
-	}
+	//	_, err = db.Exec(string(sqlFile))
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	log.Printf("File %s executed successfully", file)
+	//}
 
 	fmt.Print("http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
