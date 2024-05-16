@@ -73,7 +73,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if isValidUser(username, password) {
-		http.Redirect(w, r, "/home", http.StatusFound)
+		http.Redirect(w, r, "/connect", http.StatusFound)
 		fmt.Print("yes")
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)

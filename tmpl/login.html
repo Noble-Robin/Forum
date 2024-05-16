@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log</title>
-    <link href="../static/login.css" rel ="stylesheet">
+    <title>Login</title>
+    <link href="../static/login.css" rel="stylesheet">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="../static/navbar.css">
 </head>
@@ -13,23 +13,19 @@
         <form action="/login" method="post">
             <h1>Login</h1>
             <div class="input-box">
-                <input type ="text" placeholder="Username" name="Username" required>
-                <i class='bx bxs-user' ></i>
-
+                <input type="text" placeholder="Username" name="username" required>
+                <i class='bx bxs-user'></i>
             </div>
             <div class="input-box">
-                <input type ="password" placeholder="password" name="password" required>
-                <i class='bx bxs-lock-alt' ></i>
+                <input type="password" placeholder="Password" name="password" required>
+                <i class='bx bxs-lock-alt'></i>
             </div>
             <div class="remember-forgot">
-                <label><input type="checkbox"> remember-me
-                </label>              
+                <label><input type="checkbox"> Remember me</label>              
             </div>
-
-            <button type="submit" class="btn">login</button>
-
-            <div class="registe-link">
-                <p>No account? <a href="register">register</a></p>
+            <button type="submit" class="btn">Login</button>
+            <div class="register-link">
+                <p>No account? <a href="register">Register</a></p>
             </div>
             <div class="backhome">
                 <a href="home">Go back Home</a>
@@ -41,16 +37,15 @@
         <div class="nav-links">
             <ul>
                 <li><a href="home">Home</a></li>
-                <li><a href="categories">Catégories</a></li>
+                <li><a href="categories">Categories</a></li>
                 <li><a href="#">Contact</a></li>
             </ul>
         </div>
-        <div class="menumobile">
+        <div class="menu-mobile">
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
-    <div style="display: none;">
-    </div>
+    <div style="display: none;"></div>
     <header></header>
 </body>
 <script>
