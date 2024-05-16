@@ -2,10 +2,8 @@ CREATE TABLE users (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT,
     name TEXT,
-    age INTEGER,
     email TEXT,
-    password TEXT,
-    numero TEXT
+    password TEXT
 );
 
 CREATE TABLE user_conversation (
