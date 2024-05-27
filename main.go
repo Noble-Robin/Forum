@@ -82,7 +82,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if !connect_db(username, password) {
-		http.Redirect(w, r, "/connect", http.StatusFound)
+		http.Redirect(w, r, "/home", http.StatusFound)
 		fmt.Print("yes")
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)
@@ -111,14 +111,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Erreur lors de l'insertion de l'utilisateur dans la base de données", http.StatusInternalServerError)
 		return
-	}
-
-	type user struct {
-		user_id  string
-		username string
-		name     string
-		email    string
-		password string
 	}
 
 	fmt.Fprintf(w, "Utilisateur créé avec succès: %s\n", username)
