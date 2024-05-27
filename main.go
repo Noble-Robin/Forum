@@ -14,6 +14,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method == http.MethodPost {
 		loginHandler(w, r)
 		return
@@ -80,16 +81,12 @@ func main() {
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	if isValidUser(username, password) {
+	if !connect_db(username, password) {
 		http.Redirect(w, r, "/connect", http.StatusFound)
 		fmt.Print("yes")
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)
 	}
-}
-
-func isValidUser(username, password string) bool {
-	return (username == "admin" && password == "password")
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +113,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type user struct {
+		user_id  string
+		username string
+		name     string
+		email    string
+		password string
+	}
+
 	fmt.Fprintf(w, "Utilisateur créé avec succès: %s\n", username)
 	http.Redirect(w, r, "/connect", http.StatusFound)
 }
@@ -136,6 +141,29 @@ func verif_db(username, email string) bool {
 
 	if count > 0 {
 		fmt.Printf("L'utilisateur %s ou l'email %s existe déjà\n", username, email)
+		return false
+	}
+
+	return true
+}
+
+func connect_db(username, password string) bool {
+	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	query := "SELECT COUNT(*) FROM users WHERE username = ? AND password = ?"
+	var count int
+	err = db.QueryRow(query, username, password).Scan(&count)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	if count > 0 {
+		fmt.Printf("L'utilisateur %s est connecter\n", username)
 		return false
 	}
 
