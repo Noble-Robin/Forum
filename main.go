@@ -133,9 +133,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprintf(w, "User created successfully: %s\n", username)
-	http.Redirect(w, r, "/connect", http.StatusFound)
+	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
 func verifDB(username, email string) bool {
