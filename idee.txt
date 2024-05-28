@@ -2,3 +2,7 @@ pouvoir cree ca cathegorie
 cathegorie les plus active
 like 
 reponse au message 
+
+
+home.html , regarde la nav bar en te connectant, tu verras une un text indiquant que tu es connecté donc a reajuster en prenant en compte le if qui est dans html 
+aussi y'a l'icon "<li><i class='bx bx-user-circle' ></i> Welcome, {{.Username}}</li>" ligne 18 a replacer etc

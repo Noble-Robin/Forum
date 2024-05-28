@@ -1,4 +1,4 @@
-package struct
+package 
 
 type user struct{
 	user_id string
