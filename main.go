@@ -26,8 +26,10 @@ type CategoryData struct {
 	// Add fields as necessary
 }
 
-type PostData struct {
-	// Add fields as necessary
+type Forum struct {
+	ID          int
+	Title       string
+	Description string
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -105,16 +107,15 @@ func main() {
 	}
 	defer db.Close()
 
-	//files := []string{"User.sql", "forum.sql", "thread.sql", "post.sql"}
+	//files := []string{"User.sql", "thread.sql", "post.sql"}
 	//for _, file := range files {
 	//	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
 	//	if err != nil {
 	//		log.Fatal(err)
 	//	}
-
 	//	_, err = db.Exec(string(sqlFile))
 	//	if err != nil {
-	//		log.Fatal(err)
+	//	log.Fatal(err)
 	//	}
 	//	log.Printf("File %s executed successfully", file)
 	//}
