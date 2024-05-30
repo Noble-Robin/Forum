@@ -1,59 +1,21 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #282c34;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-}
-
-.container {
-    text-align: center;
-}
-
-h1 {
-    font-size: 3em;
-    margin-bottom: 0.5em;
-}
-
-p {
-    font-size: 1.2em;
-    margin-bottom: 2em;
-}
-
-.vinyl {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #555 0%, #222 70%, #000 100%);
-    position: relative;
-    animation: spin 5s linear infinite;
-}
-
-.label {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #f00;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1.5em;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+body { background-color: #cccccc; }
+  
+      .loader img {
+        width: 8rem;
+        height: 8.05rem;
+        vertical-align: middle;
+        animation: spin 1.0s linear infinite;
+        text-indent: -9999px;
+      }
+      @keyframes spin {
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      .loader {
+        position: fixed;
+        padding: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
