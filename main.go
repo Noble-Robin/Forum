@@ -99,6 +99,26 @@ func main() {
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
 
+	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	//files := []string{"User.sql", "forum.sql", "thread.sql", "post.sql"}
+	//for _, file := range files {
+	//	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+
+	//	_, err = db.Exec(string(sqlFile))
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	log.Printf("File %s executed successfully", file)
+	//}
+
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
 }
