@@ -111,7 +111,7 @@ func main() {
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 
-	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlie/data.db")
+	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
 	if err != nil {
 		log.Fatal(err)
 	}
