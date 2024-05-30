@@ -108,7 +108,6 @@ func main() {
 	http.HandleFunc("/login", Login)
 	http.HandleFunc("/register", Register)
 	http.HandleFunc("/error", ErrorPage)
-	http.HandleFunc("/feed", Feed)
 	http.HandleFunc("/connect", Connect)
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
