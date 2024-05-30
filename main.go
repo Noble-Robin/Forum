@@ -22,14 +22,22 @@ type User struct {
 	ProfilePicture string
 }
 
-type CategoryData struct {
-	// Add fields as necessary
-}
-
-type Forum struct {
+type Categorie struct {
 	ID          int
 	Title       string
 	Description string
+}
+
+type Thread struct {
+	ID    int
+	Title string
+}
+
+type Post struct {
+	ID        int
+	Username  string
+	Content   string
+	CreatedAt string
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +108,9 @@ func main() {
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
+	http.HandleFunc("/category", Category)
+	http.HandleFunc("/threads", Threads)
+	http.HandleFunc("/posts", Posts)
 
 	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
 	if err != nil {
@@ -107,18 +118,18 @@ func main() {
 	}
 	defer db.Close()
 
-	//files := []string{"User.sql", "thread.sql", "post.sql"}
-	//for _, file := range files {
-	//	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	_, err = db.Exec(string(sqlFile))
-	//	if err != nil {
-	//	log.Fatal(err)
-	//	}
-	//	log.Printf("File %s executed successfully", file)
-	//}
+	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	// for _, file := range files {
+	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	_, err = db.Exec(string(sqlFile))
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("File %s executed successfully", file)
+	// }
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -185,4 +196,74 @@ func Deconnect(w http.ResponseWriter, r *http.Request) {
 	session.Values["username"] = ""
 	session.Save(r, w)
 	http.Redirect(w, r, "/home", http.StatusFound)
+}
+
+func Category(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT id, title, description FROM category")
+	if err != nil {
+		http.Error(w, "Error retrieving category", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	categories := []Categorie{}
+	for rows.Next() {
+		var categorie Categorie
+		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description); err != nil {
+			http.Error(w, "Error reading category", http.StatusInternalServerError)
+			return
+		}
+		categories = append(categories, categorie)
+	}
+
+	tmpl := template.Must(template.ParseFiles("tmpl/category.html"))
+	tmpl.Execute(w, categories)
+}
+
+func Threads(w http.ResponseWriter, r *http.Request) {
+	categorieID := r.URL.Query().Get("categorie_id")
+
+	rows, err := db.Query("SELECT id, title FROM threads WHERE category_id = ?", categorieID)
+	if err != nil {
+		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	threads := []Thread{}
+	for rows.Next() {
+		var thread Thread
+		if err := rows.Scan(&thread.ID, &thread.Title); err != nil {
+			http.Error(w, "Error reading threads", http.StatusInternalServerError)
+			return
+		}
+		threads = append(threads, thread)
+	}
+
+	tmpl := template.Must(template.ParseFiles("tmpl/threads.html"))
+	tmpl.Execute(w, threads)
+}
+
+func Posts(w http.ResponseWriter, r *http.Request) {
+	threadID := r.URL.Query().Get("thread_id")
+
+	rows, err := db.Query("SELECT p.id, u.username, p.content, p.created_at FROM posts p JOIN users u ON p.user_id = u.id WHERE thread_id = ?", threadID)
+	if err != nil {
+		http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	posts := []Post{}
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(&post.ID, &post.Username, &post.Content, &post.CreatedAt); err != nil {
+			http.Error(w, "Error reading posts", http.StatusInternalServerError)
+			return
+		}
+		posts = append(posts, post)
+	}
+
+	tmpl := template.Must(template.ParseFiles("tmpl/posts.html"))
+	tmpl.Execute(w, posts)
 }
