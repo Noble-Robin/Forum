@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/feed.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Form</title>
+    
+</head>
+<body>
+    <button id="postButton">Créer un Post</button>
+
+    <div id="postForm">
+        <label for="category">Choisissez une catégorie:</label>
+        <select id="category">
+            <option value="news">Nouvelles</option>
+            <option value="sports">Sports</option>
+            <option value="entertainment">Divertissement</option>
+            <option value="technology">Technologie</option>
+        </select>
+
+        <br><br>
+
+        <label for="postContent">Écrire le post:</label>
+        <textarea id="postContent" rows="4" cols="50"></textarea>
+
+        <br><br>
+
+        <button id="submitPost">Soumettre</button>
+    </div>
+
+    <script>
+        document.getElementById('postButton').addEventListener('click', function() {
+            var postForm = document.getElementById('postForm');
+            if (postForm.style.display === 'none') {
+                postForm.style.display = 'block';
+            } else {
+                postForm.style.display = 'none';
+            }
+        });
+
+        document.getElementById('submitPost').addEventListener('click', function() {
+            var category = document.getElementById('category').value;
+            var content = document.getElementById('postContent').value;
+            alert('Catégorie: ' + category + '\nPost: ' + content);
+        });
+    </script>
+</body>
+</html>

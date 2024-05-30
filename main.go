@@ -84,6 +84,10 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
+func Feed(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "tmpl/feed.html")
+}
+
 func main() {
 	var err error
 	db, err = sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
@@ -96,6 +100,7 @@ func main() {
 	http.HandleFunc("/login", Login)
 	http.HandleFunc("/register", Register)
 	http.HandleFunc("/error", ErrorPage)
+	http.HandleFunc("/feed", Feed)
 	http.HandleFunc("/connect", Connect)
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
