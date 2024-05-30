@@ -40,7 +40,6 @@ header{
 
 .navbar .nav-links ul{
     display: flex;
-    
 }
 
 .navbar .nav-links {
@@ -50,8 +49,17 @@ header{
 
 .navbar .nav-links ul li {
     margin: 0 30px;
+    color: white;
 }
 
+.navbar .nav-links ul li.log {
+    color: white;
+    display: flex;
+    position: absolute;
+    width: 35px;
+    right: 50px;
+
+}
 
 .navbar .menu-hamburger{
     display: none;
