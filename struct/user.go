@@ -51,4 +51,4 @@ type contacts struct{
 	status string
 }
 
-func create(w http.ResponseWriter,r *http.Request ,username,string,)
+func createPost(w http.ResponseWriter,r *http.Request ,username,string,)

@@ -40,17 +40,15 @@
         <a href="">6</a>
     </div>
 
-    <!-- Pop-up form -->
     <div id="postPopup" class="popup">
         <div class="popup-content">
             <span class="close">&times;</span>
             <h2>Créer un Post</h2>
             <label for="category">Choisissez une catégorie:</label>
             <select id="category">
-                <option value="news">Nouvelles</option>
-                <option value="sports">Sports</option>
-                <option value="entertainment">Divertissement</option>
-                <option value="technology">Technologie</option>
+                {{range .}}
+                <option value="{{.ID}}">{{.Title}}</option>
+                {{end}}
             </select>
             <br><br>
             <label for="postContent">Écrire le post:</label>
