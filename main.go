@@ -54,9 +54,8 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = tmpl.Execute(w, user)
-	if err != nil {
-		http.Error(w, "Error executing template", http.StatusInternalServerError)
+	if err := tmpl.Execute(w, user); err != nil {
+		fmt.Fprintf(w, "Error executing template: %v", err)
 	}
 }
 
@@ -94,7 +93,7 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var err error
-	db, err = sql.Open("sqlite3", "C:/Users/robin/Desktop/Forum/sqlite/data.db")
+	db, err = sql.Open("sqlite3", "C:\\Users\\JENGO\\Forum\\sqlite\\data.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +111,7 @@ func main() {
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 
-	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlie/data.db")
+	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
 	if err != nil {
 		log.Fatal(err)
 	}
