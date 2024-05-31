@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
 
-	"github.com/gorilla/sessions"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	db    *sql.DB
-	store = sessions.NewCookieStore([]byte("super-secret-key"))
+	db       *sql.DB
+	sessions = map[string]string{} // simple in-memory session storage
 )
 
 type User struct {
@@ -42,11 +42,17 @@ type Post struct {
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "session-name")
+	sessionID, err := r.Cookie("session_id")
+	user := User{}
 
-	user := User{
-		IsLoggedIn: session.Values["authenticated"] == true,
-		Username:   fmt.Sprintf("%v", session.Values["username"]),
+	if err == nil {
+		username, ok := sessions[sessionID.Value]
+		if ok {
+			user = User{
+				IsLoggedIn: true,
+				Username:   username,
+			}
+		}
 	}
 
 	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
@@ -127,9 +133,69 @@ func StaticFiles(w http.ResponseWriter, r *http.Request) {
 func ImgFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
+
 func Category(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "tmpl/category.html")
+	sessionID, err := r.Cookie("session_id")
+	user := User{}
+
+	if err == nil {
+		username, ok := sessions[sessionID.Value]
+		if ok {
+			user = User{
+				IsLoggedIn: true,
+				Username:   username,
+			}
+		}
+	}
+
+	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
+	if err != nil {
+		log.Printf("Error querying categories: %v", err)
+		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	categories := []Categorie{}
+	for rows.Next() {
+		var categorie Categorie
+		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.View); err != nil {
+			log.Printf("Error scanning category: %v", err)
+			http.Error(w, "Error reading category", http.StatusInternalServerError)
+			return
+		}
+		categories = append(categories, categorie)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		http.Error(w, "Error reading category", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User       User
+		Categories []Categorie
+	}{
+		User:       user,
+		Categories: categories,
+	}
+
+	tmpl, err := template.ParseFiles("tmpl/category.html")
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Error executing template", http.StatusInternalServerError)
+	}
+
 }
+
 func main() {
 	var err error
 	db, err = sql.Open("sqlite3", "./sqlite/data.db")
@@ -150,19 +216,6 @@ func main() {
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 
-	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	// for _, file := range files {
-	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	_, err = db.Exec(string(sqlFile))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	log.Printf("File %s executed successfully", file)
-	// }
-
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
 }
@@ -172,10 +225,15 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if connectDB(username, password) {
-		session, _ := store.Get(r, "session-name")
-		session.Values["authenticated"] = true
-		session.Values["username"] = username
-		session.Save(r, w)
+		sessionID := fmt.Sprintf("%d", rand.Int())
+		sessions[sessionID] = username
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "session_id",
+			Value: sessionID,
+			Path:  "/",
+		})
+
 		http.Redirect(w, r, "/home", http.StatusFound)
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)
@@ -223,33 +281,18 @@ func connectDB(username, password string) bool {
 }
 
 func Deconnect(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "session-name")
-	session.Values["authenticated"] = false
-	session.Values["username"] = ""
-	session.Save(r, w)
+	cookie, err := r.Cookie("session_id")
+	if err == nil {
+		delete(sessions, cookie.Value)
+		http.SetCookie(w, &http.Cookie{
+			Name:   "session_id",
+			Value:  "",
+			Path:   "/",
+			MaxAge: -1,
+		})
+	}
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
-
-// func Category(w http.ResponseWriter, r *http.Request) {
-//     rows, err := db.Query("SELECT id, title, description, view FROM Categories")
-//     if err != nil {
-//         http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
-//         return
-//     }
-//     defer rows.Close()
-
-//     categories := []Categorie{}
-//     for rows.Next() {
-//         var categorie Categorie
-//         if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.View); err != nil {
-//             http.Error(w, "Error reading category", http.StatusInternalServerError)
-//             return
-//         }
-//         categories = append(categories, categorie)
-//     }
-
-//     http.Redirect(w, r, "/home", http.StatusFound)
-// }
 
 func Threads(w http.ResponseWriter, r *http.Request) {
 	categorieID := r.URL.Query().Get("categorie_id")
@@ -303,7 +346,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		forumID := r.FormValue("forum_id")
 		title := r.FormValue("title")
-		userID := r.FormValue("user_id") // Assurez-vous que l'utilisateur est connecté et récupérez son ID
+		userID := r.FormValue("user_id")
 
 		db, err := sql.Open("sqlite3", "./sqlite/data.db")
 		if err != nil {
@@ -330,7 +373,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		content := r.FormValue("content")
 		userID := r.FormValue("user_id")
 
-		db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
+		db, err := sql.Open("sqlite3", "./sqlite/data.db")
 		if err != nil {
 			http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
 			return
