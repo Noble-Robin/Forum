@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -143,18 +142,18 @@ func main() {
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 
-	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	for _, file := range files {
-		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = db.Exec(string(sqlFile))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("File %s executed successfully", file)
-	}
+	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	// for _, file := range files {
+	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	_, err = db.Exec(string(sqlFile))
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("File %s executed successfully", file)
+	// }
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
