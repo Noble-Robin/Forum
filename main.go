@@ -49,7 +49,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		Username:   fmt.Sprintf("%v", session.Values["username"]),
 	}
 
-	rows, err := db.Query("SELECT id, title, description, view FROM Categories")
+	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
 	if err != nil {
 		log.Printf("Error querying categories: %v", err)
 		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
@@ -66,6 +66,12 @@ func Home(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		categories = append(categories, categorie)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		http.Error(w, "Error reading category", http.StatusInternalServerError)
+		return
 	}
 
 	data := struct {
