@@ -2,19 +2,19 @@ CREATE TABLE Categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    view INTEGER DEFAULT 0
 );
 
-INSERT INTO Categories (title, description) VALUES ('vinyl', 'Disque se jouant sur un tourne disque');
-INSERT INTO Categories (title, description) VALUES ('rapFR', 'Rap Français');
-INSERT INTO Categories (title, description) VALUES ('Rap US', 'Rap Américain');
-INSERT INTO Categories (title, description) VALUES ('Rock', 'Musique Rock');
-INSERT INTO Categories (title, description) VALUES ('Pop', 'Musique Pop');
-INSERT INTO Categories (title, description) VALUES ('Jazz', 'Musique Jazz');
-INSERT INTO Categories (title, description) VALUES ('Blues', 'Musique Blues');
-INSERT INTO Categories (title, description) VALUES ('House', 'Musique House');
-INSERT INTO Categories (title, description) VALUES ('Reggae', 'Musique Reggae');
-INSERT INTO Categories (title, description) VALUES ('Country', 'Musique Country');
-INSERT INTO Categories (title, description) VALUES ('Indie', 'Musique Indie');
-INSERT INTO Categories (title, description) VALUES ('RnB', 'Rhythm and Blues');
-INSERT INTO Categories (title, description) VALUES ('Soul', 'Musique Soul');
+INSERT INTO Categories (title, description, view) VALUES ('vinyl', 'Disque se jouant sur un tourne disque', 14);
+INSERT INTO Categories (title, description, view) VALUES ('rapFR', 'Rap Français', 4);
+INSERT INTO Categories (title, description, view) VALUES ('Rap US', 'Rap Américain', 99);
+INSERT INTO Categories (title, description, view) VALUES ('Rock', 'Musique Rock', 23);
+INSERT INTO Categories (title, description, view) VALUES ('Pop', 'Musique Pop', 2);
+INSERT INTO Categories (title, description, view) VALUES ('Jazz', 'Musique Jazz', 4);
+INSERT INTO Categories (title, description, view) VALUES ('Blues', 'Musique Blues',0);
+INSERT INTO Categories (title, description, view) VALUES ('House', 'Musique House',0);
+INSERT INTO Categories (title, description, view) VALUES ('Reggae', 'Musique Reggae',0);
+INSERT INTO Categories (title, description, view) VALUES ('Country', 'Musique Country',0);
+INSERT INTO Categories (title, description, view) VALUES ('Indie', 'Musique Indie',0);
+INSERT INTO Categories (title, description, view) VALUES ('RnB', 'Rhythm and Blues',0);
+INSERT INTO Categories (title, description, view) VALUES ('Soul', 'Musique Soul',0);

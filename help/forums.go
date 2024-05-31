@@ -1,34 +1,27 @@
 func Category(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
+	rows, err := db.Query("SELECT id, title, description, view FROM Categories")
 	if err != nil {
-		http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	rows, err := db.Query("SELECT id, title, description FROM forums")
-	if err != nil {
-		http.Error(w, "Erreur lors de la récupération des forums", http.StatusInternalServerError)
+		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	forums := []Forum{}
+	categories := []Categorie{}
 	for rows.Next() {
-		var forum Forum
-		if err := rows.Scan(&forum.ID, &forum.Title, &forum.Description); err != nil {
-			http.Error(w, "Erreur lors de la lecture des forums", http.StatusInternalServerError)
+		var categorie Categorie
+		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.View); err != nil {
+			http.Error(w, "Error reading category", http.StatusInternalServerError)
 			return
 		}
-		forums = append(forums, forum)
+		categories = append(categories, categorie)
 	}
 
-	tmpl := template.Must(template.ParseFiles("tmpl/forums.html"))
-	tmpl.Execute(w, forums)
+	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
 type Categorie struct {
 	ID          int
 	Title       string
 	Description string
+	View        int
 }

@@ -16,9 +16,9 @@
                 <li class="active"><a href="home">Home</a></li>
                 <li class="active"><a href="categories">Catégories</a></li>
                 <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
-                {{if .IsLoggedIn}}
+                {{if .User.IsLoggedIn}}
                 <li><a href="/logout">Logout</a></li>
-                <li class="log"><i class="bx bx-user-circle"></i> Welcome, {{.Username}}</li>
+                <li class="log"><i class="bx bx-user-circle"></i> Welcome, {{.User.Username}}</li>
                 {{else}}
                 <li class="log"><a href="/login">Login</a></li>
                 {{end}}
@@ -32,12 +32,9 @@
     
     <div class="sidebar">
         <h1>Catégories</h1>
-        <a href="">1</a>
-        <a href="">2</a>
-        <a href="">3</a>
-        <a href="">4</a>
-        <a href="">5</a>
-        <a href="">6</a>
+        {{range .Categories}}
+        <a href="#">{{.Title}}</a>
+        {{end}}
     </div>
 
     <!-- Pop-up form -->
@@ -47,10 +44,9 @@
             <h2>Créer un Post</h2>
             <label for="category">Choisissez une catégorie:</label>
             <select id="category">
-                <option value="news">Nouvelles</option>
-                <option value="sports">Sports</option>
-                <option value="entertainment">Divertissement</option>
-                <option value="technology">Technologie</option>
+                {{range .Categories}}
+                <option value="{{.ID}}">{{.Title}}</option>
+                {{end}}
             </select>
             <br><br>
             <label for="postContent">Écrire le post:</label>
@@ -61,26 +57,18 @@
     </div>
 
     <script>
-        // Get the modal
         var modal = document.getElementById("postPopup");
-
-        // Get the button that opens the modal
         var btn = document.getElementById("newPostBtn");
-
-        // Get the <span> element that closes the modal
         var span = document.getElementsByClassName("close")[0];
 
-        // When the user clicks the button, open the modal 
         btn.onclick = function() {
             modal.style.display = "block";
         }
 
-        // When the user clicks on <span> (x), close the modal
         span.onclick = function() {
             modal.style.display = "none";
         }
 
-        // When the user clicks anywhere outside of the modal, close it
         window.onclick = function(event) {
             if (event.target == modal) {
                 modal.style.display = "none";
@@ -94,7 +82,6 @@
             modal.style.display = "none";
         });
 
-        // Menu mobile toggle
         const menuHamburger = document.querySelector(".menu-hamburger"); 
         const navLinks = document.querySelector(".nav-links");
 
