@@ -160,6 +160,19 @@ header{
     }
     .navbar .nav-links ul li.active a{
     color: rgb(0, 0, 0);
-}
+    
+    }
+    .navbar .nav-links ul li.log {
+        display: block;
+        position: relative;
+        width: 100%;
+        right: 0;
+        margin: 0;
+        padding: 0;
+        top: 20px;
+        text-align: center;
+        
+    }
+
 
 }

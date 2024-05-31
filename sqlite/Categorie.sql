@@ -7,7 +7,7 @@ CREATE TABLE Categories (
 
 INSERT INTO Categories (title, description, view) VALUES ('vinyl', 'Disque se jouant sur un tourne disque', 14);
 INSERT INTO Categories (title, description, view) VALUES ('rapFR', 'Rap Français', 4);
-INSERT INTO Categories (title, description, view) VALUES ('Rap US', 'Rap Américain', 99);
+INSERT INTO Categories (title, description, view) VALUES ('RapUS', 'Rap Américain', 99);
 INSERT INTO Categories (title, description, view) VALUES ('Rock', 'Musique Rock', 23);
 INSERT INTO Categories (title, description, view) VALUES ('Pop', 'Musique Pop', 2);
 INSERT INTO Categories (title, description, view) VALUES ('Jazz', 'Musique Jazz', 4);

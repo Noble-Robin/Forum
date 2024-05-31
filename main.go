@@ -127,10 +127,12 @@ func StaticFiles(w http.ResponseWriter, r *http.Request) {
 func ImgFiles(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
-
+func Category(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "tmpl/category.html")
+}
 func main() {
 	var err error
-	db, err = sql.Open("sqlite3", "C:\\Users\\JENGO\\Forum\\sqlite\\data.db")
+	db, err = sql.Open("sqlite3", "./sqlite/data.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,7 +146,7 @@ func main() {
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
-	// http.HandleFunc("/category", Category)
+	http.HandleFunc("/category/", Category)
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 
@@ -303,7 +305,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 		title := r.FormValue("title")
 		userID := r.FormValue("user_id") // Assurez-vous que l'utilisateur est connecté et récupérez son ID
 
-		db, err := sql.Open("sqlite3", "C:/Users/JENGO/Forum/sqlite/data.db")
+		db, err := sql.Open("sqlite3", "./sqlite/data.db")
 		if err != nil {
 			http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
 			return
