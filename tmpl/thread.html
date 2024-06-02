@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threads</title>
+</head>
+<body>
+    <h1>Threads</h1>
+    <ul>
+        {{range .Threads}}
+            <li>{{.Title}} from {{.CategoryID}} by {{.UserID}}</li>
+        {{end}}
+    </ul>
+</body>
+</html>

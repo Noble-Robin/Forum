@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -30,10 +31,13 @@ type Categorie struct {
 }
 
 type Thread struct {
-	ID    int
-	Title string
+	ID            int
+	Title         string
+	CategoryID    int
+	UserID        int
+	Username      string
+	CategoryTitle string
 }
-
 type Post struct {
 	ID        int
 	Username  string
@@ -110,31 +114,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "tmpl/Login.html")
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		createUser(w, r)
-		return
-	}
-	http.ServeFile(w, r, "tmpl/register.html")
-}
-
-func ErrorPage(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "tmpl/error.html")
-}
-
-func Connect(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "tmpl/connect.html")
-}
-
-func StaticFiles(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
-}
-
-func ImgFiles(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, r.URL.Path[1:])
-}
-
-func Category(w http.ResponseWriter, r *http.Request) {
+func forums(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := r.Cookie("session_id")
 	user := User{}
 
@@ -181,7 +161,7 @@ func Category(w http.ResponseWriter, r *http.Request) {
 		Categories: categories,
 	}
 
-	tmpl, err := template.ParseFiles("tmpl/category.html")
+	tmpl, err := template.ParseFiles("tmpl/forums.html")
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
 		http.Error(w, "Error parsing template", http.StatusInternalServerError)
@@ -193,8 +173,176 @@ func Category(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error executing template", http.StatusInternalServerError)
 	}
-
 }
+
+func Register(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		createUser(w, r)
+		return
+	}
+	http.ServeFile(w, r, "tmpl/register.html")
+}
+
+func ct(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		log.Printf("Error getting session cookie: %v", err)
+		// Gérer l'erreur de manière appropriée
+	}
+
+	// Initialiser une structure User vide
+	user := User{}
+
+	// Vérifier si le cookie de session existe
+	if sessionID != nil {
+		// Récupérer le nom d'utilisateur à partir de la carte sessions
+		username, ok := sessions[sessionID.Value]
+		if ok {
+			// Mettre à jour la structure User
+			user = User{
+				IsLoggedIn: true,
+				Username:   username,
+			}
+		}
+	}
+
+	// Récupérer les threads depuis la base de données
+	rows, err := db.Query("SELECT t.id, t.title, t.categorie_id, t.user_id, u.username, c.title FROM threads t LEFT JOIN users u ON t.user_id = u.id LEFT JOIN categories c ON t.categorie_id = c.id")
+	if err != nil {
+		log.Printf("Error querying threads: %v", err)
+		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	// Initialiser une slice pour stocker les threads
+	threads := []Thread{}
+
+	// Parcourir les résultats de la requête
+	for rows.Next() {
+		var thread Thread
+		var username, categoryTitle string
+		// Scanner les colonnes de la ligne actuelle dans la structure Thread
+		if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryID, &thread.UserID, &username, &categoryTitle); err != nil {
+			log.Printf("Error scanning threads: %v", err)
+			http.Error(w, "Error reading threads", http.StatusInternalServerError)
+			return
+		}
+		thread.Username = username
+		thread.CategoryTitle = categoryTitle // Mettre à jour le champ CategoryTitle
+		// Ajouter le thread à la slice
+		threads = append(threads, thread)
+	}
+
+	// Gérer les erreurs après avoir parcouru les lignes
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		http.Error(w, "Error reading category", http.StatusInternalServerError)
+		return
+	}
+
+	// Préparer les données à passer au template
+	data := struct {
+		User    User
+		Threads []Thread
+	}{
+		User:    user,
+		Threads: threads,
+	}
+
+	// Parser le template
+	tmpl, err := template.ParseFiles("tmpl/thread.html")
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+		return
+	}
+
+	// Exécuter le template avec les données
+	err = tmpl.Execute(w, data)
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Error executing template", http.StatusInternalServerError)
+	}
+}
+
+func ErrorPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "tmpl/error.html")
+}
+
+func Connect(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "tmpl/connect.html")
+}
+
+func StaticFiles(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, r.URL.Path[1:])
+}
+
+func ImgFiles(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, r.URL.Path[1:])
+}
+
+// func Category(w http.ResponseWriter, r *http.Request) { //les users ne peuvent pas créer de catégorie
+// 	sessionID, err := r.Cookie("session_id")
+// 	user := User{}
+
+// 	if err == nil {
+// 		username, ok := sessions[sessionID.Value]
+// 		if ok {
+// 			user = User{
+// 				IsLoggedIn: true,
+// 				Username:   username,
+// 			}
+// 		}
+// 	}
+
+// 	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
+// 	if err != nil {
+// 		log.Printf("Error querying categories: %v", err)
+// 		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer rows.Close()
+
+// 	categories := []Categorie{}
+// 	for rows.Next() {
+// 		var categorie Categorie
+// 		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.View); err != nil {
+// 			log.Printf("Error scanning category: %v", err)
+// 			http.Error(w, "Error reading category", http.StatusInternalServerError)
+// 			return
+// 		}
+// 		categories = append(categories, categorie)
+// 	}
+
+// 	if err = rows.Err(); err != nil {
+// 		log.Printf("Error iterating over rows: %v", err)
+// 		http.Error(w, "Error reading category", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	data := struct {
+// 		User       User
+// 		Categories []Categorie
+// 	}{
+// 		User:       user,
+// 		Categories: categories,
+// 	}
+
+// 	tmpl, err := template.ParseFiles("tmpl/category.html")
+// 	if err != nil {
+// 		log.Printf("Error parsing template: %v", err)
+// 		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	err = tmpl.Execute(w, data)
+// 	if err != nil {
+// 		log.Printf("Error executing template: %v", err)
+// 		http.Error(w, "Error executing template", http.StatusInternalServerError)
+// 	}
+
+// }
 
 func main() {
 	var err error
@@ -212,9 +360,25 @@ func main() {
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
-	http.HandleFunc("/category/", Category)
+	// http.HandleFunc("/category/", Category)
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
+	http.HandleFunc("/create-thread", CreateThread)
+	http.HandleFunc("/forums", forums)
+	http.HandleFunc("/thread", ct)
+
+	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	for _, file := range files {
+		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = db.Exec(string(sqlFile))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("File %s executed successfully", file)
+	}
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -258,6 +422,29 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+
+	threadID := r.FormValue("thread_id")
+	content := r.FormValue("content")
+	userID := r.FormValue("user_id")
+
+	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	if err != nil {
+		http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	_, err = db.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, userID, content)
+	if err != nil {
+		http.Error(w, "Erreur lors de la création du post", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/posts?thread_id=%s", threadID), http.StatusFound)
+
+}
+
 func verifDB(username, email string) bool {
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? OR email = ?", username, email).Scan(&count)
@@ -296,9 +483,14 @@ func Deconnect(w http.ResponseWriter, r *http.Request) {
 
 func Threads(w http.ResponseWriter, r *http.Request) {
 	categorieID := r.URL.Query().Get("categorie_id")
+	if categorieID == "" {
+		http.Error(w, "Missing category ID", http.StatusBadRequest)
+		return
+	}
 
-	rows, err := db.Query("SELECT id, title FROM threads WHERE category_id = ?", categorieID)
+	rows, err := db.Query("SELECT id, title FROM threads WHERE categorie_id = ?", categorieID)
 	if err != nil {
+		log.Printf("Error querying threads: %v", err)
 		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
 		return
 	}
@@ -308,14 +500,31 @@ func Threads(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var thread Thread
 		if err := rows.Scan(&thread.ID, &thread.Title); err != nil {
+			log.Printf("Error scanning threads: %v", err)
 			http.Error(w, "Error reading threads", http.StatusInternalServerError)
 			return
 		}
 		threads = append(threads, thread)
 	}
 
-	tmpl := template.Must(template.ParseFiles("tmpl/threads.html"))
-	tmpl.Execute(w, threads)
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over threads: %v", err)
+		http.Error(w, "Error reading threads", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("tmpl/thread.html")
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, threads)
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Error executing template", http.StatusInternalServerError)
+	}
 }
 
 func Posts(w http.ResponseWriter, r *http.Request) {
@@ -343,51 +552,35 @@ func Posts(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateThread(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		forumID := r.FormValue("forum_id")
-		title := r.FormValue("title")
-		userID := r.FormValue("user_id")
-
-		db, err := sql.Open("sqlite3", "./sqlite/data.db")
-		if err != nil {
-			http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
-
-		_, err = db.Exec("INSERT INTO threads (forum_id, title, user_id) VALUES (?, ?, ?)", forumID, title, userID)
-		if err != nil {
-			http.Error(w, "Erreur lors de la création du thread", http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, fmt.Sprintf("/threads?forum_id=%s", forumID), http.StatusFound)
-	} else {
-		http.ServeFile(w, r, "tmpl/create_thread.html")
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
-}
 
-func CreatePost(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		threadID := r.FormValue("thread_id")
-		content := r.FormValue("content")
-		userID := r.FormValue("user_id")
-
-		db, err := sql.Open("sqlite3", "./sqlite/data.db")
-		if err != nil {
-			http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
-
-		_, err = db.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, userID, content)
-		if err != nil {
-			http.Error(w, "Erreur lors de la création du post", http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, fmt.Sprintf("/posts?thread_id=%s", threadID), http.StatusFound)
-	} else {
-		http.ServeFile(w, r, "tmpl/create_post.html")
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
+
+	var userID int
+	err = db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
+	if err != nil {
+		log.Printf("Erreur lors de la récupération de l'ID utilisateur: %v", err)
+		http.Error(w, "Erreur lors de la récupération de l'ID utilisateur", http.StatusInternalServerError)
+		return
+	}
+
+	categoryID := r.FormValue("category_id")
+	title := r.FormValue("title")
+
+	_, err = db.Exec("INSERT INTO threads (categorie_id, title, user_username) VALUES (?, ?, ?)", categoryID, title, userID)
+	if err != nil {
+		log.Printf("Erreur lors de la création du thread: %v", err)
+		http.Error(w, "Erreur lors de la création du thread", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/threads?category_id=%s", categoryID), http.StatusFound)
 }

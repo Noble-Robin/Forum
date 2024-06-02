@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer un Thread</title>
+    <link href="../static/login.css" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="../static/navbar.css">
+</head>
+<body>
+    <div class="wrapper">
+        <form action="/create-thread" method="post">
+            <h1>Créer un Thread</h1>
+            <div class="input-box">
+                <input type="text" placeholder="Title" name="title" required>
+                <i class='bx bxs-pencil'></i>
+            </div>
+            <div class="input-box">
+                <select name="category_id" required>
+                    {{range .Categories}}
+                    <option value="{{.ID}}">{{.Title}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <button type="submit" class="btn">Créer</button>
+            <div class="backhome">
+                <a href="/home">Go back Home</a>
+            </div>
+        </form>
+    </div>
+    <nav class="navbar">
+        <a href="#" class="logo">FORUM</a>
+        <div class="nav-links">
+            <ul>
+                <li><a href="/home">Home</a></li>
+                {{if .User.IsLoggedIn}}
+                <li><a href="/logout">Logout</a></li>
+                <li class="log"><i class="bx bx-user-circle"></i> Welcome, {{.User.Username}}</li>
+                {{else}}
+                <li class="log"><a href="/login">Login</a></li>
+                {{end}}
+                <li><a href="/categories">Catégories</a></li>
+            </ul>
+        </div>
+        <div class="menumobile">
+        </div>
+        <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
+    </nav>
+</body>
+</html>
