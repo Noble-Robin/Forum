@@ -20,4 +20,4 @@ jprefere celui la en terme de design mais y'a pas d'ecriture
 prochain etape : pour chaque categorie , y'aura un pop up avec l'apparition de chaque post de cette categorie , 
 
 
-probleme a regler : lors de la creation d'un thread 1 au lieu du nom 
+probleme a regler : lors de la creation d'un thread 1 au lieu du user_username

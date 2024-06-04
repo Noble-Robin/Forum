@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -187,18 +186,14 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := r.Cookie("session_id")
 	if err != nil {
 		log.Printf("Error getting session cookie: %v", err)
-		// Gérer l'erreur de manière appropriée
+		// Handle the error appropriately
 	}
 
-	// Initialiser une structure User vide
 	user := User{}
 
-	// Vérifier si le cookie de session existe
 	if sessionID != nil {
-		// Récupérer le nom d'utilisateur à partir de la carte sessions
 		username, ok := sessions[sessionID.Value]
 		if ok {
-			// Mettre à jour la structure User
 			user = User{
 				IsLoggedIn: true,
 				Username:   username,
@@ -206,8 +201,7 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Récupérer les threads depuis la base de données
-	rows, err := db.Query("SELECT t.id, t.title, t.categorie_id, t.user_id, u.username, c.title FROM threads t LEFT JOIN users u ON t.user_id = u.id LEFT JOIN categories c ON t.categorie_id = c.id")
+	rows, err := db.Query("SELECT t.id, t.title, t.categorie_id, t.user_username, u.username, c.title FROM threads t LEFT JOIN users u ON t.user_username = u.username LEFT JOIN categories c ON t.categorie_id = c.id")
 	if err != nil {
 		log.Printf("Error querying threads: %v", err)
 		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
@@ -215,33 +209,42 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	// Initialiser une slice pour stocker les threads
 	threads := []Thread{}
 
-	// Parcourir les résultats de la requête
 	for rows.Next() {
 		var thread Thread
-		var username, categoryTitle string
-		// Scanner les colonnes de la ligne actuelle dans la structure Thread
-		if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryID, &thread.UserID, &username, &categoryTitle); err != nil {
+		var username, categoryTitle sql.NullString
+		var categoryID sql.NullInt64
+
+		if err := rows.Scan(&thread.ID, &thread.Title, &categoryID, &thread.UserID, &username, &categoryTitle); err != nil {
 			log.Printf("Error scanning threads: %v", err)
 			http.Error(w, "Error reading threads", http.StatusInternalServerError)
 			return
 		}
-		thread.Username = username
-		thread.CategoryTitle = categoryTitle // Mettre à jour le champ CategoryTitle
-		// Ajouter le thread à la slice
+
+		if categoryID.Valid {
+			thread.CategoryID = int(categoryID.Int64)
+		} else {
+			thread.CategoryID = 0
+		}
+
+		if username.Valid {
+			thread.Username = username.String
+		}
+
+		if categoryTitle.Valid {
+			thread.CategoryTitle = categoryTitle.String
+		}
+
 		threads = append(threads, thread)
 	}
 
-	// Gérer les erreurs après avoir parcouru les lignes
 	if err = rows.Err(); err != nil {
 		log.Printf("Error iterating over rows: %v", err)
 		http.Error(w, "Error reading category", http.StatusInternalServerError)
 		return
 	}
 
-	// Préparer les données à passer au template
 	data := struct {
 		User    User
 		Threads []Thread
@@ -250,7 +253,6 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		Threads: threads,
 	}
 
-	// Parser le template
 	tmpl, err := template.ParseFiles("tmpl/thread.html")
 	if err != nil {
 		log.Printf("Error parsing template: %v", err)
@@ -258,7 +260,6 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Exécuter le template avec les données
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		log.Printf("Error executing template: %v", err)
@@ -367,18 +368,18 @@ func main() {
 	http.HandleFunc("/forums", forums)
 	http.HandleFunc("/thread", ct)
 
-	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	for _, file := range files {
-		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = db.Exec(string(sqlFile))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("File %s executed successfully", file)
-	}
+	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	// for _, file := range files {
+	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	_, err = db.Exec(string(sqlFile))
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("File %s executed successfully", file)
+	// }
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -406,6 +407,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func createUser(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
+	name := r.FormValue("name")
 	password := r.FormValue("password")
 	email := r.FormValue("email")
 
@@ -414,7 +416,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.Exec("INSERT INTO users (username, password, email) VALUES (?, ?, ?)", username, password, email)
+	_, err := db.Exec("INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)", username, name, email, password)
 	if err != nil {
 		http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
 		return
@@ -564,7 +566,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var userID int
+	var userID string
 	err = db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
 	if err != nil {
 		log.Printf("Erreur lors de la récupération de l'ID utilisateur: %v", err)
@@ -572,7 +574,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categoryID := r.FormValue("category_id")
+	categoryID := r.FormValue("categorie_id")
 	title := r.FormValue("title")
 
 	_, err = db.Exec("INSERT INTO threads (categorie_id, title, user_username) VALUES (?, ?, ?)", categoryID, title, userID)
@@ -582,5 +584,5 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/threads?category_id=%s", categoryID), http.StatusFound)
+	http.Redirect(w, r, ("/threads"), http.StatusFound)
 }
