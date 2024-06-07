@@ -9,7 +9,7 @@
     <h1>Threads</h1>
     <ul>
         {{range .Threads}}
-            <li>{{.Title}} from {{.CategoryID}} by {{.UserID}}</li>
+            <li>{{.Title}} in {{.CategoryTitle}} by {{.UserUsername}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}</li>
         {{end}}
     </ul>
 </body>

@@ -17,9 +17,9 @@
                 <i class='bx bxs-pencil'></i>
             </div>
             <div class="input-box">
-                <select name="categorie_id" required>
+                <select name="categorie_title" required>
                     {{range .Categories}}
-                    <option value="{{.ID}}">{{.Title}}</option>
+                    <option value="{{.Title}}">{{.Title}}</option>
                     {{end}}
                 </select>
             </div>
