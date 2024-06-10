@@ -7,10 +7,26 @@
 </head>
 <body>
     <h1>Threads</h1>
-    <ul>
-        {{range .Threads}}
-            <li>{{.Title}} in {{.CategoryTitle}} by {{.UserUsername}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}</li>
-        {{end}}
-    </ul>
+    {{range .Categories}}
+        <h2>{{.Title}}</h2>
+        <ul>
+            {{range .Threads}}
+                <li>
+                    {{.Title}} by {{.UserUsername}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}
+                    <ul>
+                        {{range .Posts}}
+                            <li>{{.Content}} by {{.Username}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}</li>
+                        {{end}}
+                    </ul>
+                    <form action="/create-post" method="POST">
+                        <input type="hidden" name="thread_id" value="{{.ID}}">
+                        <input type="hidden" name="user_id" value="{{$.User.ID}}">
+                        <textarea name="content" placeholder="Votre réponse ici"></textarea>
+                        <button type="submit">Répondre</button>
+                    </form>
+                </li>
+            {{end}}
+        </ul>
+    {{end}}
 </body>
 </html>

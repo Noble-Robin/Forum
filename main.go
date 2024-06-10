@@ -18,6 +18,7 @@ var (
 )
 
 type User struct {
+	ID             int
 	Username       string
 	IsLoggedIn     bool
 	ProfilePicture string
@@ -28,6 +29,7 @@ type Categorie struct {
 	Title       string
 	Description string
 	View        int
+	Threads     []Thread
 }
 
 type Thread struct {
@@ -36,12 +38,13 @@ type Thread struct {
 	CategoryTitle string
 	UserUsername  string
 	CreatedAt     time.Time
+	Posts         []Post
 }
 type Post struct {
 	ID        int
 	Username  string
 	Content   string
-	CreatedAt string
+	CreatedAt time.Time
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -103,28 +106,13 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func ct(w http.ResponseWriter, r *http.Request) {
-	sessionID, err := r.Cookie("session_id")
-	if err != nil {
-		log.Printf("Error getting session cookie: %v", err)
-	}
-
-	user := User{}
-
-	if sessionID != nil {
-		username, ok := sessions[sessionID.Value]
-		if ok {
-			user = User{
-				IsLoggedIn: true,
-				Username:   username,
-			}
-		}
-	}
+	user := getUserFromSession(r)
 
 	rows, err := db.Query(`
-		SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
-		FROM threads t 
-		LEFT JOIN users u ON t.user_username = u.username 
-		LEFT JOIN categories c ON t.categorie_title = c.title`)
+        SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
+        FROM threads t 
+        LEFT JOIN users u ON t.user_username = u.username 
+        LEFT JOIN categories c ON t.categorie_title = c.title`)
 	if err != nil {
 		log.Printf("Error querying threads: %v", err)
 		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
@@ -132,8 +120,7 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	threads := []Thread{}
-
+	categoriesMap := make(map[string][]Thread)
 	for rows.Next() {
 		var thread Thread
 		if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt); err != nil {
@@ -141,7 +128,29 @@ func ct(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error reading threads", http.StatusInternalServerError)
 			return
 		}
-		threads = append(threads, thread)
+
+		// Récupérer les posts pour chaque thread
+		postsRows, err := db.Query("SELECT p.id, u.username, p.content, p.created_at FROM posts p JOIN users u ON p.user_id = u.id WHERE thread_id = ?", thread.ID)
+		if err != nil {
+			log.Printf("Error querying posts: %v", err)
+			http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+			return
+		}
+		defer postsRows.Close()
+
+		var posts []Post
+		for postsRows.Next() {
+			var post Post
+			if err := postsRows.Scan(&post.ID, &post.Username, &post.Content, &post.CreatedAt); err != nil {
+				log.Printf("Error scanning posts: %v", err)
+				http.Error(w, "Error reading posts", http.StatusInternalServerError)
+				return
+			}
+			posts = append(posts, post)
+		}
+		thread.Posts = posts
+
+		categoriesMap[thread.CategoryTitle] = append(categoriesMap[thread.CategoryTitle], thread)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -150,12 +159,17 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var categories []Categorie
+	for title, threads := range categoriesMap {
+		categories = append(categories, Categorie{Title: title, Threads: threads})
+	}
+
 	data := struct {
-		User    User
-		Threads []Thread
+		User       User
+		Categories []Categorie
 	}{
-		User:    user,
-		Threads: threads,
+		User:       user,
+		Categories: categories,
 	}
 
 	tmpl, err := template.ParseFiles("tmpl/thread.html")
@@ -272,6 +286,7 @@ func main() {
 	http.HandleFunc("/create-thread", CreateThread)
 	http.HandleFunc("/forums", forums)
 	http.HandleFunc("/thread", ct)
+	http.HandleFunc("/create-post", CreatePost)
 
 	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
 	// for _, file := range files {
@@ -330,26 +345,23 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
 
 	threadID := r.FormValue("thread_id")
 	content := r.FormValue("content")
-	userID := r.FormValue("user_id")
 
-	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	_, err := db.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, user.ID, content)
 	if err != nil {
-		http.Error(w, "Erreur lors de l'ouverture de la base de données", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	_, err = db.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, userID, content)
-	if err != nil {
-		http.Error(w, "Erreur lors de la création du post", http.StatusInternalServerError)
+		log.Printf("Error creating post: %v", err)
+		http.Error(w, "Error creating post", http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/posts?thread_id=%s", threadID), http.StatusFound)
-
+	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
 }
 
 func verifDB(username, email string) bool {
@@ -505,9 +517,11 @@ func getUserFromSession(r *http.Request) User {
 	if err == nil {
 		username, ok := sessions[sessionID.Value]
 		if ok {
-			user = User{
-				IsLoggedIn: true,
-				Username:   username,
+			err := db.QueryRow("SELECT id, username FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username)
+			if err != nil {
+				log.Printf("Error querying user: %v", err)
+			} else {
+				user.IsLoggedIn = true
 			}
 		}
 	}
