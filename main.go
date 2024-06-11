@@ -10,11 +10,12 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
 	db       *sql.DB
-	sessions = map[string]string{} // simple in-memory session storage
+	sessions = map[string]string{}
 )
 
 type User struct {
@@ -344,6 +345,15 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
@@ -377,7 +387,8 @@ func verifDB(username, email string) bool {
 
 func connectDB(username, password string) bool {
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND password = ?", username, password).Scan(&count)
+	hash_password := CheckPasswordHash(password)
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND password = ?", username, hash_password).Scan(&count)
 	if err != nil {
 		log.Println(err)
 		return false
