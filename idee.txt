@@ -21,3 +21,6 @@ prochain etape : pour chaque categorie , y'aura un pop up avec l'apparition de c
 
 
 probleme a regler : lors de la creation d'un thread 1 au lieu du user_username
+
+
+faire une page profile 
