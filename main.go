@@ -397,6 +397,8 @@ func connectDB(username, password string) bool {
 	return count > 0
 }
 
+//blabla
+
 func Deconnect(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err == nil {
