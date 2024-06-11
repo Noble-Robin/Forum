@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -354,6 +355,21 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
+func connectDB(username, password string) bool {
+	var hashedPassword string
+	err := db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&hashedPassword)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	if !CheckPasswordHash(password, hashedPassword) {
+		return false
+	}
+
+	return true
+}
+
 func CreatePost(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
@@ -383,18 +399,6 @@ func verifDB(username, email string) bool {
 	}
 
 	return count == 0
-}
-
-func connectDB(username, password string) bool {
-	var count int
-	hash_password := CheckPasswordHash(password)
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND password = ?", username, hash_password).Scan(&count)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-
-	return count > 0
 }
 
 //blabla
