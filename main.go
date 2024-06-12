@@ -288,6 +288,8 @@ func main() {
 	http.HandleFunc("/thread", ct)
 	http.HandleFunc("/create-post", CreatePost)
 	http.HandleFunc("/create-category", CreateCategories)
+	http.HandleFunc("/category-posts", CategoryPosts)
+	http.HandleFunc("/view-post", ViewPost)
 
 	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
 	// for _, file := range files {
@@ -626,6 +628,141 @@ func Posts(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := template.Must(template.ParseFiles("tmpl/posts.html"))
 	tmpl.Execute(w, posts)
+}
+
+func CategoryPosts(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+
+	categoryTitle := r.URL.Query().Get("title")
+	if categoryTitle == "" {
+		http.Error(w, "Missing category title", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch all threads in the category
+	rows, err := db.Query(`
+        SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
+        FROM threads t 
+        WHERE t.categorie_title = ?`, categoryTitle)
+	if err != nil {
+		log.Printf("Error querying threads: %v", err)
+		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var threads []Thread
+	for rows.Next() {
+		var thread Thread
+		if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt); err != nil {
+			log.Printf("Error scanning threads: %v", err)
+			http.Error(w, "Error reading threads", http.StatusInternalServerError)
+			return
+		}
+
+		// Fetch posts for each thread
+		postsRows, err := db.Query("SELECT p.id, u.username, p.content, p.created_at FROM posts p JOIN users u ON p.user_id = u.id WHERE thread_id = ?", thread.ID)
+		if err != nil {
+			log.Printf("Error querying posts: %v", err)
+			http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+			return
+		}
+		defer postsRows.Close()
+
+		var posts []Post
+		for postsRows.Next() {
+			var post Post
+			if err := postsRows.Scan(&post.ID, &post.Username, &post.Content, &post.CreatedAt); err != nil {
+				log.Printf("Error scanning posts: %v", err)
+				http.Error(w, "Error reading posts", http.StatusInternalServerError)
+				return
+			}
+			posts = append(posts, post)
+		}
+		thread.Posts = posts
+
+		threads = append(threads, thread)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		http.Error(w, "Error reading threads", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User    User
+		Threads []Thread
+	}{
+		User:    user,
+		Threads: threads,
+	}
+
+	renderTemplate(w, "tmpl/category_posts.html", data)
+}
+
+func ViewPost(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+
+	threadID := r.URL.Query().Get("id")
+	if threadID == "" {
+		http.Error(w, "Missing thread ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch the thread/post
+	var thread Thread
+	err := db.QueryRow(`
+        SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
+        FROM threads t 
+        WHERE t.id = ?`, threadID).Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt)
+	if err != nil {
+		log.Printf("Error querying thread: %v", err)
+		http.Error(w, "Error retrieving thread", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch comments for the thread
+	rows, err := db.Query(`
+        SELECT p.id, u.username, p.content, p.created_at 
+        FROM posts p 
+        JOIN users u ON p.user_id = u.id 
+        WHERE p.thread_id = ?`, threadID)
+	if err != nil {
+		log.Printf("Error querying comments: %v", err)
+		http.Error(w, "Error retrieving comments", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var comments []Post
+	for rows.Next() {
+		var comment Post
+		if err := rows.Scan(&comment.ID, &comment.Username, &comment.Content, &comment.CreatedAt); err != nil {
+			log.Printf("Error scanning comment: %v", err)
+			http.Error(w, "Error reading comments", http.StatusInternalServerError)
+			return
+		}
+		comments = append(comments, comment)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("Error iterating over rows: %v", err)
+		http.Error(w, "Error reading comments", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User     User
+		Thread   Thread
+		Comments []Post
+	}{
+		User:     user,
+		Thread:   thread,
+		Comments: comments,
+	}
+
+	renderTemplate(w, "tmpl/view_post.html", data)
 }
 
 func getUserFromSession(r *http.Request) User {

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Category Posts</title>
+</head>
+<body>
+    {{if .User.IsLoggedIn}}
+    <p>Welcome, {{.User.Username}}!</p>
+    {{else}}
+    <p><a href="/login">Login</a> or <a href="/register">Register</a></p>
+    {{end}}
+
+    <h1>Posts in Category: {{.Threads | index 0 | .CategoryTitle}}</h1>
+
+    {{range .Threads}}
+    <h2>{{.Title}} by {{.UserUsername}} at {{.CreatedAt}}</h2>
+    <ul>
+        {{range .Posts}}
+        <li>{{.Username}}: {{.Content}} ({{.CreatedAt}})</li>
+        {{end}}
+    </ul>
+    {{end}}
+
+    <p><a href="/home">Back to Home</a></p>
+</body>
+</html>

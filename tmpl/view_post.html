@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Post</title>
+</head>
+<body>
+    <h1>{{.Thread.Title}}</h1>
+    <p>Category: {{.Thread.CategoryTitle}}</p>
+    <p>Created By: {{.Thread.UserUsername}}</p>
+    <p>Created At: {{.Thread.CreatedAt}}</p>
+    <hr>
+    <h2>Comments</h2>
+    {{range .Comments}}
+        <div>
+            <p><strong>{{.Username}}</strong> - {{.CreatedAt}}</p>
+            <p>{{.Content}}</p>
+        </div>
+        <hr>
+    {{end}}
+</body>
+</html>
