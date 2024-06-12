@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -30,7 +28,7 @@ type Categorie struct {
 	ID          int
 	Title       string
 	Description string
-	View        int
+	Post        int
 	Threads     []Thread
 }
 
@@ -282,13 +280,14 @@ func main() {
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
-	// http.HandleFunc("/category/", Category)
+	http.HandleFunc("/category/", Category)
 	http.HandleFunc("/threads", Threads)
 	http.HandleFunc("/posts", Posts)
 	http.HandleFunc("/create-thread", CreateThread)
 	http.HandleFunc("/forums", forums)
 	http.HandleFunc("/thread", ct)
 	http.HandleFunc("/create-post", CreatePost)
+	http.HandleFunc("/create-category", CreateCategories)
 
 	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
 	// for _, file := range files {
@@ -346,48 +345,25 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
+// func HashPassword(password string) (string, error) {
+// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+// 	return string(bytes), err
+// }
+
+// func CheckPasswordHash(password, hash string) bool {
+// 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+// 	return err == nil
+// }
 
 func connectDB(username, password string) bool {
-	var hashedPassword string
-	err := db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&hashedPassword)
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND password = ?", username, password).Scan(&count)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	if !CheckPasswordHash(password, hashedPassword) {
-		return false
-	}
-
-	return true
-}
-
-func CreatePost(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromSession(r)
-	if !user.IsLoggedIn {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	threadID := r.FormValue("thread_id")
-	content := r.FormValue("content")
-
-	_, err := db.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, user.ID, content)
-	if err != nil {
-		log.Printf("Error creating post: %v", err)
-		http.Error(w, "Error creating post", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
+	return count > 0
 }
 
 func verifDB(username, email string) bool {
@@ -401,8 +377,6 @@ func verifDB(username, email string) bool {
 	return count == 0
 }
 
-//blabla
-
 func Deconnect(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session_id")
 	if err == nil {
@@ -415,6 +389,167 @@ func Deconnect(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	http.Redirect(w, r, "/home", http.StatusFound)
+}
+
+func CreateCategories(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	title := r.FormValue("title")
+	description := r.FormValue("description")
+
+	_, err = db.Exec("INSERT INTO Categories (titre, description, user_username) VALUES (?, ?, ?)", title, description, username)
+	if err != nil {
+		log.Printf("Error creating category: %v", err)
+		http.Error(w, "Error creating category", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/category", http.StatusFound)
+}
+
+func CreateThread(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	var userID string
+	err = db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
+	if err != nil {
+		log.Printf("Error retrieving user ID: %v", err)
+		http.Error(w, "Error retrieving user ID", http.StatusInternalServerError)
+		return
+	}
+
+	categoryTitle := r.FormValue("categorie_title")
+	title := r.FormValue("title")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO threads (categorie_title, title, user_username) VALUES (?, ?, ?)", categoryTitle, title, username)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error creating thread: %v", err)
+		http.Error(w, "Error creating thread", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("UPDATE categories SET post = post + 1 WHERE title = ?", categoryTitle)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error updating post count: %v", err)
+		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/thread", http.StatusFound)
+}
+
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	threadID := r.FormValue("thread_id")
+	content := r.FormValue("content")
+
+	var categoryTitle string
+	err := db.QueryRow("SELECT categorie_title FROM threads WHERE id = ?", threadID).Scan(&categoryTitle)
+	if err != nil {
+		log.Printf("Error retrieving category title: %v", err)
+		http.Error(w, "Error retrieving category title", http.StatusInternalServerError)
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO posts (thread_id, user_id, content) VALUES (?, ?, ?)", threadID, user.ID, content)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error creating post: %v", err)
+		http.Error(w, "Error creating post", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("UPDATE categories SET post = post + 1 WHERE title = ?", categoryTitle)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error updating post count: %v", err)
+		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
+}
+
+func Category(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+
+	categories, err := getCategories()
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User       User
+		Categories []Categorie
+	}{
+		User:       user,
+		Categories: categories,
+	}
+
+	renderTemplate(w, "tmpl/category.html", data)
 }
 
 func Threads(w http.ResponseWriter, r *http.Request) {
@@ -493,40 +628,6 @@ func Posts(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, posts)
 }
 
-func CreateThread(w http.ResponseWriter, r *http.Request) {
-	sessionID, err := r.Cookie("session_id")
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	username, ok := sessions[sessionID.Value]
-	if !ok {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	var userID string
-	err = db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
-	if err != nil {
-		log.Printf("Erreur lors de la récupération de l'ID utilisateur: %v", err)
-		http.Error(w, "Erreur lors de la récupération de l'ID utilisateur", http.StatusInternalServerError)
-		return
-	}
-
-	categorieTitle := r.FormValue("categorie_title")
-	title := r.FormValue("title")
-
-	_, err = db.Exec("INSERT INTO threads (categorie_title, title, user_username) VALUES (?, ?, ?)", categorieTitle, title, username)
-	if err != nil {
-		log.Printf("Erreur lors de la création du thread: %v", err)
-		http.Error(w, "Erreur lors de la création du thread", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, ("/thread"), http.StatusFound)
-}
-
 func getUserFromSession(r *http.Request) User {
 	sessionID, err := r.Cookie("session_id")
 	user := User{}
@@ -547,7 +648,7 @@ func getUserFromSession(r *http.Request) User {
 }
 
 func getCategories() ([]Categorie, error) {
-	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
+	rows, err := db.Query("SELECT id, title, description, post FROM Categories ORDER BY post DESC")
 	if err != nil {
 		return nil, fmt.Errorf("Error querying categories: %v", err)
 	}
@@ -556,7 +657,7 @@ func getCategories() ([]Categorie, error) {
 	categories := []Categorie{}
 	for rows.Next() {
 		var categorie Categorie
-		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.View); err != nil {
+		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.Post); err != nil {
 			return nil, fmt.Errorf("Error scanning category: %v", err)
 		}
 		categories = append(categories, categorie)
