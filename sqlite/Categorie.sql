@@ -2,7 +2,7 @@ CREATE TABLE Categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
-    user_username TEXT NOT NULL,
+    user_username TEXT,
     post INTEGER DEFAULT 0,
     FOREIGN KEY (user_username) REFERENCES users(username)
 );

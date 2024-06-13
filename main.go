@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -205,7 +206,6 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 // func Category(w http.ResponseWriter, r *http.Request) { //les users ne peuvent pas créer de catégorie
 // 	sessionID, err := r.Cookie("session_id")
 // 	user := User{}
-
 // 	if err == nil {
 // 		username, ok := sessions[sessionID.Value]
 // 		if ok {
@@ -215,7 +215,6 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 // 			}
 // 		}
 // 	}
-
 // 	rows, err := db.Query("SELECT id, title, description, view FROM Categories ORDER BY view DESC")
 // 	if err != nil {
 // 		log.Printf("Error querying categories: %v", err)
@@ -223,7 +222,6 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 // 		return
 // 	}
 // 	defer rows.Close()
-
 // 	categories := []Categorie{}
 // 	for rows.Next() {
 // 		var categorie Categorie
@@ -234,13 +232,11 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 // 		}
 // 		categories = append(categories, categorie)
 // 	}
-
 // 	if err = rows.Err(); err != nil {
 // 		log.Printf("Error iterating over rows: %v", err)
 // 		http.Error(w, "Error reading category", http.StatusInternalServerError)
 // 		return
 // 	}
-
 // 	data := struct {
 // 		User       User
 // 		Categories []Categorie
@@ -248,20 +244,17 @@ func ImgFiles(w http.ResponseWriter, r *http.Request) {
 // 		User:       user,
 // 		Categories: categories,
 // 	}
-
 // 	tmpl, err := template.ParseFiles("tmpl/category.html")
 // 	if err != nil {
 // 		log.Printf("Error parsing template: %v", err)
 // 		http.Error(w, "Error parsing template", http.StatusInternalServerError)
 // 		return
 // 	}
-
 // 	err = tmpl.Execute(w, data)
 // 	if err != nil {
 // 		log.Printf("Error executing template: %v", err)
 // 		http.Error(w, "Error executing template", http.StatusInternalServerError)
 // 	}
-
 // }
 
 func main() {
@@ -291,18 +284,18 @@ func main() {
 	http.HandleFunc("/category-posts", CategoryPosts)
 	http.HandleFunc("/view-post", ViewPost)
 
-	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	// for _, file := range files {
-	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	_, err = db.Exec(string(sqlFile))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	log.Printf("File %s executed successfully", file)
-	// }
+	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	for _, file := range files {
+		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = db.Exec(string(sqlFile))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("File %s executed successfully", file)
+	}
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -351,7 +344,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 // 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 // 	return string(bytes), err
 // }
-
 // func CheckPasswordHash(password, hash string) bool {
 // 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 // 	return err == nil
