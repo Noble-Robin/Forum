@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+</head>
+
+<body>
+    <h1>Welcome, {{ .User.Username }}</h1>
+    <div>
+        <img src="{{ .User.ProfilePicture }}" alt="Profile Picture">
+    </div>
+    <div>
+        <p>Name: {{ .User.Name }}</p>
+        <p>Email: {{ .User.Email }}</p>
+    </div>
+    <div>
+        <a href="/update-profile">Update Profile</a>
+    </div>
+</body>
+
+</html>

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -187,6 +186,22 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func Profile(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	data := struct {
+		User User
+	}{
+		User: user,
+	}
+
+	renderTemplate(w, "tmpl/profile.html", data)
+}
+
 func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "tmpl/error.html")
 }
@@ -283,19 +298,21 @@ func main() {
 	http.HandleFunc("/create-category", CreateCategories)
 	http.HandleFunc("/category-posts", CategoryPosts)
 	http.HandleFunc("/view-post", ViewPost)
+	http.HandleFunc("/profile", Profile)
+	http.HandleFunc("/update-profile", UpdateProfile)
 
-	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	for _, file := range files {
-		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = db.Exec(string(sqlFile))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("File %s executed successfully", file)
-	}
+	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
+	// for _, file := range files {
+	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	_, err = db.Exec(string(sqlFile))
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("File %s executed successfully", file)
+	// }
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -776,27 +793,38 @@ func getUserFromSession(r *http.Request) User {
 	return user
 }
 
-func getCategories() ([]Categorie, error) {
-	rows, err := db.Query("SELECT id, title, description, post FROM Categories ORDER BY post DESC")
-	if err != nil {
-		return nil, fmt.Errorf("Error querying categories: %v", err)
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
 	}
-	defer rows.Close()
 
-	categories := []Categorie{}
-	for rows.Next() {
-		var categorie Categorie
-		if err := rows.Scan(&categorie.ID, &categorie.Title, &categorie.Description, &categorie.Post); err != nil {
-			return nil, fmt.Errorf("Error scanning category: %v", err)
+	if r.Method == http.MethodPost {
+		newUsername := r.FormValue("username")
+		newProfilePicture := r.FormValue("profile_picture")
+
+		_, err := db.Exec("UPDATE users SET username = ?, profile_picture = ? WHERE id = ?", newUsername, newProfilePicture, user.ID)
+		if err != nil {
+			log.Printf("Error updating user: %v", err)
+			http.Error(w, "Error updating profile", http.StatusInternalServerError)
+			return
 		}
-		categories = append(categories, categorie)
+
+		sessions[newUsername] = sessions[user.Username]
+		delete(sessions, user.Username)
+
+		http.Redirect(w, r, "/profile", http.StatusFound)
+		return
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("Error iterating over rows: %v", err)
+	data := struct {
+		User User
+	}{
+		User: user,
 	}
 
-	return categories, nil
+	renderTemplate(w, "tmpl/profile.html", data)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
@@ -807,8 +835,32 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 		return
 	}
 
-	if err := t.Execute(w, data); err != nil {
+	err = t.Execute(w, data)
+	if err != nil {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error executing template", http.StatusInternalServerError)
 	}
+}
+
+func getCategories() ([]Categorie, error) {
+	rows, err := db.Query("SELECT id, title, description FROM categories")
+	if err != nil {
+		return nil, fmt.Errorf("error querying categories: %v", err)
+	}
+	defer rows.Close()
+
+	var categories []Categorie
+	for rows.Next() {
+		var cat Categorie
+		if err := rows.Scan(&cat.ID, &cat.Title, &cat.Description); err != nil {
+			return nil, fmt.Errorf("error scanning categories: %v", err)
+		}
+		categories = append(categories, cat)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over categories: %v", err)
+	}
+
+	return categories, nil
 }

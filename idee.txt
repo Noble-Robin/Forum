@@ -24,3 +24,7 @@ probleme a regler : lors de la creation d'un thread 1 au lieu du user_username
 
 
 faire une page profile 
+
+faire des liens sur differentes pges html
+
+refaire les redirection notament avec tout les htmls afin que le forum soit propres

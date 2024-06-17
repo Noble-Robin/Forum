@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Profile</title>
+</head>
+
+<body>
+    <h1>Update Your Profile</h1>
+    <form action="/update-profile" method="POST">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username" value="{{ .User.Username }}" readonly><br><br>
+
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" value="{{ .User.Name }}"><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email" value="{{ .User.Email }}"><br><br>
+
+        <label for="profilePicture">Profile Picture URL:</label><br>
+        <input type="text" id="profilePicture" name="profile_picture" value="{{ .User.ProfilePicture }}"><br><br>
+
+        <input type="submit" value="Update">
+    </form>
+</body>
+
+</html>
