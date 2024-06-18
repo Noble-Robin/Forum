@@ -20,6 +20,8 @@ var (
 type User struct {
 	ID             int
 	Username       string
+	Name           string
+	Email          string
 	IsLoggedIn     bool
 	ProfilePicture string
 }
@@ -780,7 +782,7 @@ func getUserFromSession(r *http.Request) User {
 	if err == nil {
 		username, ok := sessions[sessionID.Value]
 		if ok {
-			err := db.QueryRow("SELECT id, username FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username)
+			err := db.QueryRow("SELECT id, username, email,name FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Email, &user.Name)
 			if err != nil {
 				log.Printf("Error querying user: %v", err)
 			} else {
