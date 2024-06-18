@@ -129,7 +129,6 @@ func ct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Récupérer les posts pour chaque thread
 		postsRows, err := db.Query("SELECT p.id, u.username, p.content, p.created_at FROM posts p JOIN users u ON p.user_id = u.id WHERE thread_id = ?", thread.ID)
 		if err != nil {
 			log.Printf("Error querying posts: %v", err)
@@ -424,7 +423,7 @@ func CreateCategories(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	description := r.FormValue("description")
 
-	_, err = db.Exec("INSERT INTO Categories (titre, description, user_username) VALUES (?, ?, ?)", title, description, username)
+	_, err = db.Exec("INSERT INTO Categories (title, description, user_username) VALUES (?, ?, ?)", title, description, username)
 	if err != nil {
 		log.Printf("Error creating category: %v", err)
 		http.Error(w, "Error creating category", http.StatusInternalServerError)
