@@ -37,6 +37,13 @@ header{
     font-size: 2em;
     font-weight: bold;
 }
+.navbar .profile{
+    color: rgba(255, 255, 255, 0);
+    display: flex;
+    position: absolute;
+    width: 35px;
+    right: 70px;
+}
 
 .navbar .nav-links ul{
     display: flex;

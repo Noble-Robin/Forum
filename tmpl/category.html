@@ -14,7 +14,7 @@
         <div class="nav-links">
             <ul>
                 <li class="active"><a href="home">Home</a></li>
-                <li class="active"><a href="categories">Catégories</a></li>
+                <li class="active"><a href="category">Catégories</a></li>
                 <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
                 {{if .User.IsLoggedIn}}
                 <li><a href="/logout">Logout</a></li>
@@ -24,33 +24,19 @@
                 {{end}}
             </ul>
         </div>
+        {{if .User.IsLoggedIn}}
+        <a href="profile" class="profile">acessprofil</a>
+        {{end}}
         <div class="menumobile">
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
     <header></header>
 
-
-    <div class="wrapper">
-        <form action="/create-category" method="post">
-            <h1>Créer une Categorie</h1>
-            <div class="input-box">
-                <input type="text" placeholder="Title" name="title" required>
-                <i class='bx bxs-pencil'></i>
-                <input type="text" placeholder="Description" name="description" required>
-            </div>
-            
-            <button type="submit" class="btn">Créer</button>
-            <div class="backhome">
-                <a href="/home">Go back Home</a>
-            </div>
-        </form>
-    </div>
-    
     <div class="sidebar">
         <h1>Catégories</h1>
         {{range .Categories}}
-        <a href="#">{{.Title}}</a>
+        <a href={{.Title}}>{{.Title}}</a>
         {{end}}
     </div>
 
@@ -59,6 +45,17 @@
         <div class="popup-content">
             <span class="close">&times;</span>
             <h2>Créer un Post</h2>
+            <input type="text" placeholder="Title" name="title" required>
+            <br><br>
+            <input type="text" placeholder="Description" name="description" required>
+            <br><br>
+            <button id="submitPost">Créer</button>
+        </div>
+    </div>
+    <div id="postPopup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Créer une Catégorie</h2>
             <label for="category">Choisissez une catégorie:</label>
             <select id="category">
                 {{range .Categories}}
@@ -72,7 +69,6 @@
             <button id="submitPost">Soumettre</button>
         </div>
     </div>
-
     <script>
         var modal = document.getElementById("postPopup");
         var btn = document.getElementById("newPostBtn");
