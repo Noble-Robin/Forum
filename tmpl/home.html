@@ -31,11 +31,11 @@
     <header></header>
     
     <div class="sidebar">
-        <h1>Catégories</h1>
-        {{range .Categories}}
-        <a href="#">{{.Title}}</a>
-        {{end}}
-    </div>
+    <h1>Catégories</h1>
+    {{range .Categories}}
+    <a href="/categories/{{.ID}}">{{.Title}}</a>
+    {{end}}
+</div>
 
     <!-- Pop-up form -->
     <div id="postPopup" class="popup">
