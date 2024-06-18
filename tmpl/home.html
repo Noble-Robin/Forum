@@ -25,7 +25,7 @@
             </ul>
         </div>
         {{if .User.IsLoggedIn}}
-        <a href="profile" class="profile">acessprofil</a>
+        <a href="/tmpl/profile.html" class="profile">acessprofil</a>
         {{end}}
         <div class="menumobile">
         </div>
@@ -38,7 +38,7 @@
     <div class="sidebar">
         <h1>Catégories</h1>
         {{range .Categories}}
-        <a href=category/{{.Title}}>{{.Title}}</a>
+        <a href=thread/{{.Title}}>{{.Title}}</a>
         {{end}}
     </div>
     
