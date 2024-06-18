@@ -14,7 +14,7 @@
         <div class="nav-links">
             <ul>
                 <li class="active"><a href="home">Home</a></li>
-                <li class="active"><a href="categories">Catégories</a></li>
+                <li class="active"><a href="#" id="newCatbtn">Nouvelle Catégories</a></li>
                 <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
                 {{if .User.IsLoggedIn}}
                 <li><a href="/logout">Logout</a></li>
@@ -24,39 +24,69 @@
                 {{end}}
             </ul>
         </div>
+        {{if .User.IsLoggedIn}}
+        <a href="/tmpl/profile.html" class="profile">acessprofil</a>
+        {{end}}
         <div class="menumobile">
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
     <header></header>
+
+
     
     <div class="sidebar">
+<<<<<<< HEAD
     <h1>Catégories</h1>
     {{range .Categories}}
     <a href="/categories/{{.ID}}">{{.Title}}</a>
     {{end}}
 </div>
 
+=======
+        <h1>Catégories</h1>
+        {{range .Categories}}
+        <a href=thread/{{.Title}}>{{.Title}}</a>
+        {{end}}
+    </div>
+    
+>>>>>>> f7264bd935e72dfaf8b5578819621606e6b5fcbe
     <!-- Pop-up form -->
     <div id="postPopup" class="popup">
+        <form action="/create-thread" method="post">
         <div class="popup-content">
             <span class="close">&times;</span>
             <h2>Créer un Post</h2>
             <label for="category">Choisissez une catégorie:</label>
-            <select id="category">
+            <select name="categorie_title" id="category">
                 {{range .Categories}}
-                <option value="{{.ID}}">{{.Title}}</option>
+                <option value="{{.Title}}">{{.Title}}</option>
                 {{end}}
             </select>
             <br><br>
             <label for="postContent">Écrire le post:</label>
-            <textarea id="postContent" rows="4" cols="50"></textarea>
+            <textarea name="title" id="postContent" rows="4" cols="50"></textarea>
             <br><br>
             <button id="submitPost">Soumettre</button>
+        </div>
+        </form>
+    </div>
+
+    <div id="catPopup" class="popup">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Créer un Post</h2>
+            <input type="text" placeholder="Title" name="title" required>
+            <br><br>
+            <input type="text" placeholder="Description" name="description" required>
+            <br><br>
+            <button id="submitPost">Créer</button>
         </div>
     </div>
 
     <script>
+        var modal = document.getElementById("catPopup");
+        var btn = document.getElementById("newCatBtn");
         var modal = document.getElementById("postPopup");
         var btn = document.getElementById("newPostBtn");
         var span = document.getElementsByClassName("close")[0];
@@ -74,13 +104,6 @@
                 modal.style.display = "none";
             }
         }
-
-        document.getElementById('submitPost').addEventListener('click', function() {
-            var category = document.getElementById('category').value;
-            var content = document.getElementById('postContent').value;
-            alert('Catégorie: ' + category + '\nPost: ' + content);
-            modal.style.display = "none";
-        });
 
         const menuHamburger = document.querySelector(".menu-hamburger"); 
         const navLinks = document.querySelector(".nav-links");

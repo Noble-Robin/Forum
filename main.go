@@ -288,7 +288,7 @@ func main() {
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
 	http.HandleFunc("/category/", Category)
-	http.HandleFunc("/threads", Threads)
+	http.HandleFunc("/threads/", Threads)
 	http.HandleFunc("/posts", Posts)
 	http.HandleFunc("/create-thread", CreateThread)
 	http.HandleFunc("/forums", forums)

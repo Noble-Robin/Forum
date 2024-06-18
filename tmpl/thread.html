@@ -4,8 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threads</title>
+    <link rel="stylesheet" href="/static/thread.css">
+    <link rel="stylesheet" href="/static/navbar.css">
 </head>
 <body>
+    <nav class="navbar">
+        <a href="home" class="logo">FORUM</a>
+        <div class="nav-links">
+            <ul>
+                <li class="active"><a href="home">Home</a></li>
+                <li class="active"><a href="#" id="newCatbtn">Nouvelle Catégories</a></li>
+                <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
+                {{if .User.IsLoggedIn}}
+                <li><a href="/logout">Logout</a></li>
+                <li class="log"><i class="bx bx-user-circle"></i> Welcome, {{.User.Username}}</li>
+                {{else}}
+                <li class="log"><a href="/login">Login</a></li>
+                {{end}}
+            </ul>
+        </div>
+        {{if .User.IsLoggedIn}}
+        <a href="profile" class="profile">acessprofil</a>
+        {{end}}
+        <div class="menumobile">
+        </div>
+        <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
+    </nav>
     <h1>Threads</h1>
     {{range .Categories}}
         <h2>{{.Title}}</h2>
