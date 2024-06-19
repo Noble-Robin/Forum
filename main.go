@@ -53,11 +53,20 @@ type Thread struct {
 	CreatedAt     time.Time
 	Posts         []Post
 }
+
 type Post struct {
 	ID        int
+	ThreadID  int
+	UserID    int
 	Username  string
 	Content   string
-	CreatedAt time.Time
+	CreatedAt string
+}
+
+type UserActivity struct {
+	User    User
+	Threads []Thread
+	Posts   []Post
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -225,6 +234,21 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+
+	threads, err := getUserThreads(user.Username)
+	if err != nil {
+		log.Printf("Error retrieving threads for user %s: %v", user.Username, err)
+		http.Error(w, "Error retrieving user threads", http.StatusInternalServerError)
+		return
+	}
+
+	posts, err := getUserPosts(user.Username, user)
+	if err != nil {
+		log.Printf("Error retrieving posts for user %s: %v", user.Username, err)
+		http.Error(w, "Error retrieving user posts", http.StatusInternalServerError)
+		return
+	}
+
 	categories, err := getCategories()
 	if err != nil {
 		log.Printf("%v", err)
@@ -235,9 +259,13 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		User       User
 		Categories []Categorie
+		Threads    []Thread
+		Posts      []Post
 	}{
 		User:       user,
 		Categories: categories,
+		Threads:    threads,
+		Posts:      posts,
 	}
 
 	renderTemplate(w, "tmpl/profile.html", data)
@@ -942,4 +970,77 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 	renderTemplate(w, "tmpl/viewprofile.html", data)
+}
+
+func getUserThreads(username string) ([]Thread, error) {
+	// Establish a database connection (replace with your actual database configuration)
+	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	// Prepare SQL query to fetch threads created by the user
+	query := "SELECT id, title, categorie_title, user_username, created_at FROM threads WHERE user_username = ?"
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Initialize an empty slice to store threads
+	var threads []Thread
+
+	// Iterate over the rows returned by the query
+	for rows.Next() {
+		var thread Thread
+		// Scan each row into a Thread struct
+		err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		// Append the thread to the threads slice
+		threads = append(threads, thread)
+	}
+
+	// Check for any errors encountered during iteration
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return threads, nil
+}
+
+func getUserPosts(username string, user User) ([]Post, error) {
+	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := "SELECT id, thread_id, user_id, content, created_at FROM posts WHERE user_id = (SELECT id FROM users WHERE username = ?)"
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		// Assign the username from the user obtained via getUserFromSession
+		post.Username = user.Username
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }
