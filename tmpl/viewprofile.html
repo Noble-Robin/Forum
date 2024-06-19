@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile - {{ .User.Username }}</title>
+</head>
+<body>
+    <h1>User Profile - {{ .User.Username }}</h1>
+    <div>
+        <p><strong>Name:</strong> {{ .User.Name }}</p>
+        <p><strong>Email:</strong> {{ .User.Email }}</p>
+        <p><strong>Role:</strong> {{ .User.Role }}</p>
+        <p><img src="{{ .User.ProfilePicture }}" alt="Profile Picture"></p>
+    </div>
+</body>
+</html>

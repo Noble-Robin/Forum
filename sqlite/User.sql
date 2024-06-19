@@ -3,5 +3,6 @@ CREATE TABLE users (
     username TEXT,
     name TEXT,
     email TEXT,
-    password TEXT
+    password TEXT,
+    role TEXT
 );

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -28,13 +29,13 @@ type User struct {
 	ProfilePicture string
 }
 
-type UserRole int
+type UserRole string
 
 const (
-	RoleGuest UserRole = iota
-	RoleUser
-	RoleModerator
-	RoleAdministrator
+	RoleGuest         UserRole = "guest"
+	RoleUser          UserRole = "user"
+	RoleModerator     UserRole = "moderator"
+	RoleAdministrator UserRole = "admin"
 )
 
 type Categorie struct {
@@ -53,11 +54,20 @@ type Thread struct {
 	CreatedAt     time.Time
 	Posts         []Post
 }
+
 type Post struct {
 	ID        int
+	ThreadID  int
+	UserID    int
 	Username  string
 	Content   string
-	CreatedAt time.Time
+	CreatedAt string
+}
+
+type UserActivity struct {
+	User    User
+	Threads []Thread
+	Posts   []Post
 }
 
 func Home(w http.ResponseWriter, r *http.Request) {
@@ -225,6 +235,21 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+
+	threads, err := getUserThreads(user.Username)
+	if err != nil {
+		log.Printf("Error retrieving threads for user %s: %v", user.Username, err)
+		http.Error(w, "Error retrieving user threads", http.StatusInternalServerError)
+		return
+	}
+
+	posts, err := getUserPosts(user.Username, user)
+	if err != nil {
+		log.Printf("Error retrieving posts for user %s: %v", user.Username, err)
+		http.Error(w, "Error retrieving user posts", http.StatusInternalServerError)
+		return
+	}
+
 	categories, err := getCategories()
 	if err != nil {
 		log.Printf("%v", err)
@@ -235,9 +260,13 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		User       User
 		Categories []Categorie
+		Threads    []Thread
+		Posts      []Post
 	}{
 		User:       user,
 		Categories: categories,
+		Threads:    threads,
+		Posts:      posts,
 	}
 
 	renderTemplate(w, "tmpl/profile.html", data)
@@ -286,38 +315,43 @@ func main() {
 	http.HandleFunc("/report-thread", ReportThread)
 	http.HandleFunc("/delete-post", DeletePost)
 	http.HandleFunc("/report-post", ReportPost)
+	http.HandleFunc("/admin", AdminPage)
+	http.HandleFunc("/view-profile", ViewProfile)
 
-	// user := User{
-	// 	ID:             1,
-	// 	Username:       "john_doe",
-	// 	Name:           "John Doe",
-	// 	Email:          "john.doe@example.com",
-	// 	IsLoggedIn:     true,
-	// 	ProfilePicture: "/path/to/profile_picture.jpg",
-	// }
-	// role := RoleUser
-	// if user.Username == "admin" {
-	// 	role = RoleAdministrator
-	// } else if user.Username == "moderator" {
-	// 	role = RoleModerator
-	// } else if user.Username == "" {
-	// 	role = RoleGuest
-	// }
 
-	// fmt.Printf("User: %s, Role: %d\n", user.Username, role)
+	user := User{
+		ID:             1,
+		Username:       "john_doe",
+		Name:           "John Doe",
+		Email:          "john.doe@example.com",
+		IsLoggedIn:     true,
+		ProfilePicture: "/path/to/profile_picture.jpg",
+	}
+	role := RoleUser
+	if user.Username == "admin" {
+		role = RoleAdministrator
+	} else if user.Username == "moderator" {
+		role = RoleModerator
+	} else if user.Username == "" {
+		role = RoleGuest
+	}
 
-	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql","report.sql"}
-	// for _, file := range files {
-	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	_, err = db.Exec(string(sqlFile))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	log.Printf("File %s executed successfully", file)
-	// }
+	fmt.Printf("User: %s, Role: %d\n", user.Username, role)
+
+	
+	files := []string{"report.sql", "User.sql", "thread.sql", "post.sql", "Categorie.sql"} //"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql",
+
+	for _, file := range files {
+		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = db.Exec(string(sqlFile))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("File %s executed successfully", file)
+	}
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -360,7 +394,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)", username, name, email, hashedPassword)
+	_, err = db.Exec("INSERT INTO users (username, name, email, password,role) VALUES (?, ?, ?, ?,?)", username, name, email, hashedPassword, "user")
 	if err != nil {
 		http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
 		return
@@ -768,7 +802,7 @@ func getUserFromSession(r *http.Request) User {
 	if err == nil {
 		username, ok := sessions[sessionID.Value]
 		if ok {
-			err := db.QueryRow("SELECT id, username, email,name FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Email, &user.Name)
+			err := db.QueryRow("SELECT id, username, email,name,role FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Email, &user.Name, &user.Role)
 			if err != nil {
 				log.Printf("Error querying user: %v", err)
 			} else {
@@ -811,7 +845,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		User: user,
 	}
 
-	renderTemplate(w, "tmpl/profile.html", data)
+	renderTemplate(w, "tmpl/updateprofile.html", data)
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
@@ -850,4 +884,179 @@ func getCategories() ([]Categorie, error) {
 	}
 
 	return categories, nil
+}
+
+func AdminPage(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if user.Role != RoleAdministrator {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	users, err := getUsers()
+	if err != nil {
+		log.Printf("Error retrieving users: %v", err)
+		http.Error(w, "Error retrieving users", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User  User
+		Users []User
+	}{
+		User:  user,
+		Users: users,
+	}
+
+	if r.Method == http.MethodPost {
+		action := r.FormValue("action")
+		username := r.FormValue("username")
+
+		switch action {
+		case "promote":
+			err := promoteUser(username)
+			if err != nil {
+				log.Printf("Error promoting user: %v", err)
+				http.Error(w, "Error promoting user", http.StatusInternalServerError)
+				return
+			}
+		case "demote":
+			err := demoteUser(username)
+			if err != nil {
+				log.Printf("Error demoting user: %v", err)
+				http.Error(w, "Error demoting user", http.StatusInternalServerError)
+				return
+			}
+		default:
+			http.Error(w, "Invalid action", http.StatusBadRequest)
+			return
+		}
+
+		http.Redirect(w, r, "/admin", http.StatusFound)
+		return
+	}
+
+	renderTemplate(w, "tmpl/admin.html", data)
+}
+
+func promoteUser(username string) error {
+	_, err := db.Exec("UPDATE users SET role = ? WHERE username = ?", RoleAdministrator, username)
+	return err
+}
+
+func demoteUser(username string) error {
+	_, err := db.Exec("UPDATE users SET role = ? WHERE username = ?", RoleUser, username)
+	return err
+}
+
+func getUsers() ([]User, error) {
+	rows, err := db.Query("SELECT id, username, name, email, role FROM users")
+	if err != nil {
+		return nil, fmt.Errorf("error querying users: %v", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role); err != nil {
+			return nil, fmt.Errorf("error scanning user: %v", err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over users: %v", err)
+	}
+
+	return users, nil
+}
+
+func ViewProfile(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	if username == "" {
+		http.Error(w, "Username parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	var user User
+	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
+	if err != nil {
+		log.Printf("Error retrieving user profile: %v", err)
+		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User User
+	}{
+		User: user,
+	}
+	renderTemplate(w, "tmpl/viewprofile.html", data)
+}
+
+func getUserThreads(username string) ([]Thread, error) {
+	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := "SELECT id, title, categorie_title, user_username, created_at FROM threads WHERE user_username = ?"
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []Thread
+
+	for rows.Next() {
+		var thread Thread
+		err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return threads, nil
+}
+
+func getUserPosts(username string, user User) ([]Post, error) {
+	db, err := sql.Open("sqlite3", "./sqlite/data.db")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := "SELECT id, thread_id, user_id, content, created_at FROM posts WHERE user_id = (SELECT id FROM users WHERE username = ?)"
+	rows, err := db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []Post
+
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		// Assign the username from the user obtained via getUserFromSession
+		post.Username = user.Username
+		posts = append(posts, post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }

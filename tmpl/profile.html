@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
     <link rel="stylesheet" href="../static/navbar.css">
     <link rel="stylesheet" href="../static/profile.css">
-    <title>Profile</title>
-    
 </head>
-
 <body>
     <nav class="navbar">
         <a href="home" class="logo">FORUM</a>
@@ -37,88 +34,34 @@
 
     <div class="container">
         <h1>Welcome, {{ .User.Username }}</h1>
-        <div class="profile-info">
-            <p><strong>Name:</strong> {{ .User.Name }}</p>
-            <p><strong>Email:</strong> {{ .User.Email }}</p>
-            <a href="/update-profile">Update Profile</a>
-        </div>
-    </div>
-    <div id="postPopup" class="popup">
-        <form action="/create-thread" method="post">
-        <div class="popup-content">
-            <span class="close">&times;</span>
-            <h2>Créer un Post</h2>
-            <label for="category">Choisissez une catégorie:</label>
-            <select name="categorie_title" id="category">
-                {{range .Categories}}
-                <option value="{{.Title}}">{{.Title}}</option>
-                {{end}}
-            </select>
-            <br><br>
-            <label for="postContent">Écrire le post:</label>
-            <textarea name="title" id="postContent" rows="4" cols="50"></textarea>
-            <br><br>
-            <button id="submitPost">Soumettre</button>
-        </div>
-        </form>
-    </div>
 
-    <div id="catPopup" class="popup">
-        <form action="/create-category" method="post">
-        <div class="popup-content">
-            <span2 class="closed">&times;</span2>
-            <h2>Créer une categories</h2>
-            <input type="text" placeholder="Title" name="title" required>
-            <br><br>
-            <input type="text" placeholder="Description" name="description" required>
-            <br><br>
-            <button id="submitPost">Créer</button>
-        </div>
-        </form>
+        <h2>Threads Created</h2>
+        <ul>
+            {{ range .Threads }}
+            <li class="thread-item">
+                <strong>{{ .Title }}</strong> - {{ .CategoryTitle }} (Created on {{ .CreatedAt }})
+            </li>
+            {{ end }}
+        </ul>
+
+        <h2>Posts Made</h2>
+        <ul>
+            {{ range .Posts }}
+            <li>
+                {{ .CreatedAt }} - {{ .Content }}
+            </li>
+            {{ end }}
+        </ul>
     </div>
-    
 
     <script>
-        var modal1 = document.getElementById("postPopup");
-        var btn1 = document.getElementById("newPostBtn");
-        var span = document.getElementsByClassName("close")[0];
-        var modal2 = document.getElementById("catPopup");
-        var btn2 = document.getElementById("btncat");
-        var span2 = document.getElementsByClassName("closed")[0];
-    
-        btn1.onclick = function() {
-            modal1.style.display = "block";
-        }
-
-        span.onclick = function() {
-            modal1.style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal1.style.display = "none";
-            }
-        }
-        btn2.onclick = function() {
-            modal2.style.display = "block";
-        }
-        span2.onclick = function() {
-            modal2.style.display = "none";
-        }
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal2.style.display = "none";
-            }
-        }
-
-        const menuHamburger = document.querySelector(".menu-hamburger"); 
+        const menuHamburger = document.querySelector(".menu-hamburger");
         const navLinks = document.querySelector(".nav-links");
 
         menuHamburger.addEventListener('click', () => {
             navLinks.classList.toggle('mobile-menu');
         });
     </script>
-
 
 </body>
 </html>
