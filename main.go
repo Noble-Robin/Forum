@@ -285,7 +285,7 @@ func main() {
 	http.HandleFunc("/delete-thread", DeleteThread)
 	http.HandleFunc("/report-thread", ReportThread)
 	http.HandleFunc("/delete-post", DeletePost)
-	http.HandleFunc("/report-thread", ReportPost)
+	http.HandleFunc("/report-post", ReportPost)
 
 	// user := User{
 	// 	ID:             1,

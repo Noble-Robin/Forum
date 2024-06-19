@@ -48,7 +48,7 @@ resize: vertical;
 margin-bottom: 10px;
 }
 button.submit {
-background-color: #28a745;
+background-color: #007bff;
 color: #fff;
 border: none;
 padding: 10px 20px;
@@ -56,19 +56,30 @@ cursor: pointer;
 border-radius: 5px;
 }
 button:hover.submit {
-background-color: #218838;
+background-color: #015dbe;
 }
 button.report {
-    background-color: #28a745;
+    background-color: #ee2929;
     color: #fff;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
     border-radius: 5px;
-    }
-    button:hover.submit {
-    background-color: #218838;
-    }
+}
+button:hover.report {
+background-color: #b92020;
+}
+button.delete {
+    background-color: #ee2929;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+button:hover.delete {
+background-color: #b92020;
+}
 .post-info {
 font-size: 14px;
 color: #666;
