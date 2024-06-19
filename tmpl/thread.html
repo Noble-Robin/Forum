@@ -32,12 +32,7 @@
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
-    <div class="sidebar">
-        <h1>Catégories</h1>
-        {{range .Categories}}
-        <a href=thread/{{.Title}}>{{.Title}}</a>
-        {{end}}
-    </div>
+   
     <h1>Threads</h1>
     {{range .Categories}}
         <h3>{{.Title}}</h3>
