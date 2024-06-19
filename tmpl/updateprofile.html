@@ -4,26 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/navbar.css">
+    <link rel="stylesheet" href="../static/updateprofil.css">
     <title>Update Profile</title>
 </head>
 
 <body>
-    <h1>Update Your Profile</h1>
-    <form action="/update-profile" method="POST">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" value="{{ .User.Username }}" readonly><br><br>
+    <div class="container">
+        <h1>Update Your Profile</h1>
+        <form action="/update-profile" method="POST" class="profile-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" value="{{ .User.Username }}" readonly>
+            </div>
 
-        <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name" value="{{ .User.Name }}"><br><br>
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" value="{{ .User.Name }}">
+            </div>
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" value="{{ .User.Email }}"><br><br>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="{{ .User.Email }}">
+            </div>
 
-        <label for="profilePicture">Profile Picture URL:</label><br>
-        <input type="text" id="profilePicture" name="profile_picture" value="{{ .User.ProfilePicture }}"><br><br>
+            <div class="form-group">
+                <label for="profilePicture">Profile Picture URL:</label>
+                <input type="text" id="profilePicture" name="profile_picture" value="{{ .User.ProfilePicture }}">
+            </div>
 
-        <input type="submit" value="Update">
-    </form>
+            <div class="form-group">
+                <input type="submit" value="Update" class="btn">
+            </div>
+        </form>
+    </div>
 </body>
+
 
 </html>
