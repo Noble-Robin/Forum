@@ -389,30 +389,28 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "tmpl/updateprofile.html", data)
 }
 
-func ViewProfile(w http.ResponseWriter, r *http.Request) { // if we want to see other profile but not used dues of html's problem
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		http.Error(w, "Username parameter is required", http.StatusBadRequest)
-		return
-	}
+// func ViewProfile(w http.ResponseWriter, r *http.Request) { // if we want to see other profile but not used dues of html's problem
+// 	username := r.URL.Query().Get("username")
+// 	if username == "" {
+// 		http.Error(w, "Username parameter is required", http.StatusBadRequest)
+// 		return
+// 	}
+// 	var user User
+// 	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
+// 	if err != nil {
+// 		log.Printf("Error retrieving user profile: %v", err)
+// 		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	data := struct {
+// 		User User
+// 	}{
+// 		User: user,
+// 	}
+// 	renderTemplate(w, "tmpl/viewprofile.html", data)
+// }
 
-	var user User
-	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
-	if err != nil {
-		log.Printf("Error retrieving user profile: %v", err)
-		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
-		return
-	}
-
-	data := struct {
-		User User
-	}{
-		User: user,
-	}
-	renderTemplate(w, "tmpl/viewprofile.html", data)
-}
-
-func CreateCategories(w http.ResponseWriter, r *http.Request) {
+func CreateCategories(w http.ResponseWriter, r *http.Request) { //
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -444,7 +442,7 @@ func CreateCategories(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
-func CreateThread(w http.ResponseWriter, r *http.Request) {
+func CreateThread(w http.ResponseWriter, r *http.Request) { //create new post
 	sessionID, err := r.Cookie("session_id")
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -501,7 +499,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
-func CreatePost(w http.ResponseWriter, r *http.Request) {
+func CreatePost(w http.ResponseWriter, r *http.Request) { //create new comment
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -616,98 +614,6 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
-func ReportThread(w http.ResponseWriter, r *http.Request) {
-	sessionID, err := r.Cookie("session_id")
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	username, ok := sessions[sessionID.Value]
-	if !ok {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	threadID := r.FormValue("thread_id")
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Printf("Error beginning transaction: %v", err)
-		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
-		return
-	}
-
-	var dbUsername string
-	err = tx.QueryRow("SELECT user_username FROM threads WHERE id = ?", threadID).Scan(&dbUsername)
-	if err != nil {
-		tx.Rollback()
-		log.Printf("Error retrieving thread owner: %v", err)
-		http.Error(w, "Error retrieving thread owner", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = tx.Exec("INSERT INTO reports (reporter_username, thread_id) VALUES (?, ?)", username, threadID)
-	if err != nil {
-		tx.Rollback()
-		log.Printf("Error inserting report: %v", err)
-		http.Error(w, "Error reporting thread", http.StatusInternalServerError)
-		return
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing transaction: %v", err)
-		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/thread", http.StatusFound)
-}
-
-func ReportPost(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromSession(r)
-	if !user.IsLoggedIn {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	postID := r.FormValue("post_id")
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Printf("Error beginning transaction: %v", err)
-		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
-		return
-	}
-
-	var threadID string
-	err = tx.QueryRow("SELECT thread_id FROM posts WHERE id = ?", postID).Scan(&threadID)
-	if err != nil {
-		tx.Rollback()
-		log.Printf("Error retrieving post information: %v", err)
-		http.Error(w, "Error retrieving post information", http.StatusInternalServerError)
-		return
-	}
-
-	_, err = tx.Exec("INSERT INTO reports (reporter_username, post_id) VALUES (?, ?)", user.Username, postID)
-	if err != nil {
-		tx.Rollback()
-		log.Printf("Error inserting report: %v", err)
-		http.Error(w, "Error reporting post", http.StatusInternalServerError)
-		return
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing transaction: %v", err)
-		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
-}
-
 func DeletePost(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
@@ -759,6 +665,98 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
 }
 
+func ReportThread(w http.ResponseWriter, r *http.Request) { // report and  go into db. report
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	threadID := r.FormValue("thread_id")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var dbUsername string
+	err = tx.QueryRow("SELECT user_username FROM threads WHERE id = ?", threadID).Scan(&dbUsername)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving thread owner: %v", err)
+		http.Error(w, "Error retrieving thread owner", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO reports (reporter_username, thread_id) VALUES (?, ?)", username, threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error inserting report: %v", err)
+		http.Error(w, "Error reporting thread", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/thread", http.StatusFound)
+}
+
+func ReportPost(w http.ResponseWriter, r *http.Request) { // report and  go into db. report
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	postID := r.FormValue("post_id")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var threadID string
+	err = tx.QueryRow("SELECT thread_id FROM posts WHERE id = ?", postID).Scan(&threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving post information: %v", err)
+		http.Error(w, "Error retrieving post information", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO reports (reporter_username, post_id) VALUES (?, ?)", user.Username, postID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error inserting report: %v", err)
+		http.Error(w, "Error reporting post", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
+}
+
 func getUserFromSession(r *http.Request) User {
 	sessionID, err := r.Cookie("session_id")
 	user := User{}
@@ -793,7 +791,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	}
 }
 
-func getCategories() ([]Categorie, error) {
+func getCategories() ([]Categorie, error) { // grab all categories
 	rows, err := db.Query("SELECT id, title, description FROM categories")
 	if err != nil {
 		return nil, fmt.Errorf("error querying categories: %v", err)
@@ -816,7 +814,7 @@ func getCategories() ([]Categorie, error) {
 	return categories, nil
 }
 
-func getUsers() ([]User, error) {
+func getUsers() ([]User, error) { // grab all users
 	rows, err := db.Query("SELECT id, username, name, email, role FROM users")
 	if err != nil {
 		return nil, fmt.Errorf("error querying users: %v", err)
@@ -838,7 +836,8 @@ func getUsers() ([]User, error) {
 
 	return users, nil
 }
-func getUserThreads(username string) ([]Thread, error) {
+
+func getUserThreads(username string) ([]Thread, error) { // grab all posts
 	db, err := sql.Open("sqlite3", "./sqlite/data.db")
 	if err != nil {
 		return nil, err
@@ -870,7 +869,7 @@ func getUserThreads(username string) ([]Thread, error) {
 	return threads, nil
 }
 
-func getUserPosts(username string, user User) ([]Post, error) {
+func getUserPosts(username string, user User) ([]Post, error) { // grab all  comment
 	db, err := sql.Open("sqlite3", "./sqlite/data.db")
 	if err != nil {
 		return nil, err
@@ -904,7 +903,7 @@ func getUserPosts(username string, user User) ([]Post, error) {
 	return posts, nil
 }
 
-func AdminPage(w http.ResponseWriter, r *http.Request) {
+func AdminPage(w http.ResponseWriter, r *http.Request) { //for admin can promote or remote right of an user
 	user := getUserFromSession(r)
 	if user.Role != RoleAdministrator {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -957,19 +956,19 @@ func AdminPage(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "tmpl/admin.html", data)
 }
 
-func promoteUser(username string) error {
+func promoteUser(username string) error { //promote user as admin
 	_, err := db.Exec("UPDATE users SET role = ? WHERE username = ?", RoleAdministrator, username)
 	return err
 }
 
-func demoteUser(username string) error {
+func demoteUser(username string) error { //demote user as simply user
 	_, err := db.Exec("UPDATE users SET role = ? WHERE username = ?", RoleUser, username)
 	return err
 }
 
 func main() {
 	var err error
-	db, err = sql.Open("sqlite3", "./sqlite/data.db")
+	db, err = sql.Open("sqlite3", "./sqlite/data.db") //db
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -993,8 +992,9 @@ func main() {
 	http.HandleFunc("/delete-post", DeletePost)
 	http.HandleFunc("/report-post", ReportPost)
 	http.HandleFunc("/admin", AdminPage)
-	http.HandleFunc("/view-profile", ViewProfile)
+	// http.HandleFunc("/view-profile", ViewProfile)
 
+	// init if not already launch
 	// files := []string{"report.sql", "User.sql", "thread.sql", "post.sql", "Categorie.sql"} //"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql",
 	// for _, file := range files {
 	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
@@ -1008,6 +1008,6 @@ func main() {
 	// 	log.Printf("File %s executed successfully", file)
 	// }
 
-	fmt.Println("Server started at http://localhost:8081/home")
+	fmt.Println("Server started at http://localhost:8081/home") //landing page
 	http.ListenAndServe(":8081", nil)
 }
