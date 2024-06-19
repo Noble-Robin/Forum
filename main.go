@@ -389,28 +389,26 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "tmpl/updateprofile.html", data)
 }
 
-func ViewProfile(w http.ResponseWriter, r *http.Request) { // if we want to see other profile but not used dues of html's problem
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		http.Error(w, "Username parameter is required", http.StatusBadRequest)
-		return
-	}
-
-	var user User
-	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
-	if err != nil {
-		log.Printf("Error retrieving user profile: %v", err)
-		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
-		return
-	}
-
-	data := struct {
-		User User
-	}{
-		User: user,
-	}
-	renderTemplate(w, "tmpl/viewprofile.html", data)
-}
+// func ViewProfile(w http.ResponseWriter, r *http.Request) { // if we want to see other profile but not used dues of html's problem
+// 	username := r.URL.Query().Get("username")
+// 	if username == "" {
+// 		http.Error(w, "Username parameter is required", http.StatusBadRequest)
+// 		return
+// 	}
+// 	var user User
+// 	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
+// 	if err != nil {
+// 		log.Printf("Error retrieving user profile: %v", err)
+// 		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	data := struct {
+// 		User User
+// 	}{
+// 		User: user,
+// 	}
+// 	renderTemplate(w, "tmpl/viewprofile.html", data)
+// }
 
 func CreateCategories(w http.ResponseWriter, r *http.Request) { //
 	user := getUserFromSession(r)
@@ -994,7 +992,7 @@ func main() {
 	http.HandleFunc("/delete-post", DeletePost)
 	http.HandleFunc("/report-post", ReportPost)
 	http.HandleFunc("/admin", AdminPage)
-	http.HandleFunc("/view-profile", ViewProfile)
+	// http.HandleFunc("/view-profile", ViewProfile)
 
 	// init if not already launch
 	// files := []string{"report.sql", "User.sql", "thread.sql", "post.sql", "Categorie.sql"} //"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql",
