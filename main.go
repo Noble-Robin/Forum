@@ -235,7 +235,6 @@ func main() {
 	http.HandleFunc("/logout", Deconnect)
 	http.HandleFunc("/static/", StaticFiles)
 	http.HandleFunc("/img/", ImgFiles)
-	http.HandleFunc("/category/", Category)
 	http.HandleFunc("/create-thread", CreateThread)
 	http.HandleFunc("/forums", forums)
 	http.HandleFunc("/thread", ct)
@@ -483,27 +482,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
-}
-
-func Category(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromSession(r)
-
-	categories, err := getCategories()
-	if err != nil {
-		log.Printf("%v", err)
-		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
-		return
-	}
-
-	data := struct {
-		User       User
-		Categories []Categorie
-	}{
-		User:       user,
-		Categories: categories,
-	}
-
-	renderTemplate(w, "tmpl/category.html", data)
 }
 
 func getUserFromSession(r *http.Request) User {
