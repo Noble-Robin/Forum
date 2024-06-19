@@ -973,14 +973,12 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserThreads(username string) ([]Thread, error) {
-	// Establish a database connection (replace with your actual database configuration)
 	db, err := sql.Open("sqlite3", "./sqlite/data.db")
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	// Prepare SQL query to fetch threads created by the user
 	query := "SELECT id, title, categorie_title, user_username, created_at FROM threads WHERE user_username = ?"
 	rows, err := db.Query(query, username)
 	if err != nil {
@@ -988,22 +986,17 @@ func getUserThreads(username string) ([]Thread, error) {
 	}
 	defer rows.Close()
 
-	// Initialize an empty slice to store threads
 	var threads []Thread
 
-	// Iterate over the rows returned by the query
 	for rows.Next() {
 		var thread Thread
-		// Scan each row into a Thread struct
 		err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
-		// Append the thread to the threads slice
 		threads = append(threads, thread)
 	}
 
-	// Check for any errors encountered during iteration
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
