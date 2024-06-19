@@ -42,7 +42,10 @@
                     {{.Title}} by {{.UserUsername}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}
                     <ul>
                         {{range .Posts}}
-                            <li>{{.Content}} by {{.Username}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}</li>
+                            <li>{{.Content}} by {{.Username}} at {{.CreatedAt.Format "02 Jan 2006 15:04:05"}}
+                                <button class="report-post" data-post-id="{{.ID}}">Report Post</button>
+                                <button class="delete-post" data-post-id="{{.ID}}">Delete Post</button>
+                            </li>
                         {{end}}
                     </ul>
                     <form action="/create-post" method="POST">
@@ -50,9 +53,9 @@
                         <input type="hidden" name="user_id" value="{{$.User.ID}}">
                         <textarea name="content" placeholder="Votre réponse ici"></textarea>
                         <button type="submit" name="submit" class="submit">Répondre</button>
-                        <button type="report" name="report" class="report">Report</button>
-                        <button type="delete" name="delete" class="delete">Delete</button>
                     </form>
+                    <button class="report-thread" data-thread-id="{{.ID}}">Report Thread</button>
+                    <button class="delete-thread" data-thread-id="{{.ID}}">Delete Thread</button>
                 </li>
             {{end}}
         </ul>
@@ -80,7 +83,7 @@
     <div id="catPopup" class="popup">
         <form action="/create-category" method="post">
         <div class="popup-content">
-            <span2 class="closed">&times;</span2>
+            <span class="closed">&times;</span>
             <h2>Créer une categories</h2>
             <input type="text" placeholder="Title" name="title" required>
             <br><br>
@@ -107,7 +110,7 @@
         }
 
         window.onclick = function(event) {
-            if (event.target == modal) {
+            if (event.target == modal1) {
                 modal1.style.display = "none";
             }
         }
@@ -118,7 +121,7 @@
             modal2.style.display = "none";
         }
         window.onclick = function(event) {
-            if (event.target == modal) {
+            if (event.target == modal2) {
                 modal2.style.display = "none";
             }
         }
@@ -128,6 +131,94 @@
 
         menuHamburger.addEventListener('click', () => {
             navLinks.classList.toggle('mobile-menu');
+        });
+
+        // Handle report and delete actions for threads
+        document.querySelectorAll('.report-thread').forEach(button => {
+            button.addEventListener('click', function() {
+                var threadID = this.getAttribute('data-thread-id');
+                fetch('/report-thread', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'thread_id': threadID
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Thread reported successfully.');
+                    } else {
+                        alert('Failed to report thread.');
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-thread').forEach(button => {
+            button.addEventListener('click', function() {
+                var threadID = this.getAttribute('data-thread-id');
+                fetch('/delete-thread', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'thread_id': threadID
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Thread deleted successfully.');
+                        location.reload();
+                    } else {
+                        alert('Failed to delete thread.');
+                    }
+                });
+            });
+        });
+
+        // Handle report and delete actions for posts
+        document.querySelectorAll('.report-post').forEach(button => {
+            button.addEventListener('click', function() {
+                var postID = this.getAttribute('data-post-id');
+                fetch('/report-post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'post_id': postID
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Post reported successfully.');
+                    } else {
+                        alert('Failed to report post.');
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-post').forEach(button => {
+            button.addEventListener('click', function() {
+                var postID = this.getAttribute('data-post-id');
+                fetch('/delete-post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'post_id': postID
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Post deleted successfully.');
+                        location.reload();
+                    } else {
+                        alert('Failed to delete post.');
+                    }
+                });
+            });
         });
     </script>
 </body>
