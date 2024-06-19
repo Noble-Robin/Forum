@@ -128,14 +128,11 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Initialiser une carte de threads par catégorie
 	categoriesMap := make(map[string][]Thread)
 
-	// Pour chaque catégorie, récupérer les threads associés
 	for _, cat := range categories {
 		categoryTitle := cat.Title
 
-		// Récupérer les threads de la catégorie depuis la base de données
 		rows, err := db.Query(`
             SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
             FROM threads t 
@@ -157,7 +154,6 @@ func ct(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			// Récupérer les posts pour chaque thread
 			postsRows, err := db.Query(`
                 SELECT p.id, u.username, p.content, p.created_at 
                 FROM posts p 
@@ -286,7 +282,10 @@ func main() {
 	http.HandleFunc("/create-category", CreateCategories)
 	http.HandleFunc("/profile", Profile)
 	http.HandleFunc("/update-profile", UpdateProfile)
-	http.HandleFunc("/delete_thread", DeleteThread)
+	http.HandleFunc("/delete-thread", DeleteThread)
+	http.HandleFunc("/report-thread", ReportThread)
+	http.HandleFunc("/delete-post", DeletePost)
+	http.HandleFunc("/report-thread", ReportPost)
 
 	// user := User{
 	// 	ID:             1,
