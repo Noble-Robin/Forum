@@ -14,7 +14,7 @@
         <div class="nav-links">
             <ul>
                 <li class="active"><a href="home">Home</a></li>
-                <li class="active"><a href="#" id="newCatbtn">Nouvelle Catégories</a></li>
+                <li class="active"><a href="#" id="btncat">Nouvelle Catégories</a></li>
                 <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
                 {{if .User.IsLoggedIn}}
                 <li><a href="/logout">Logout</a></li>
@@ -36,22 +36,12 @@
 
     
     <div class="sidebar">
-<<<<<<< HEAD
-    <h1>Catégories</h1>
-    {{range .Categories}}
-    <a href="/categories/{{.ID}}">{{.Title}}</a>
-    {{end}}
-</div>
-
-=======
         <h1>Catégories</h1>
         {{range .Categories}}
         <a href=thread/{{.Title}}>{{.Title}}</a>
         {{end}}
     </div>
     
->>>>>>> f7264bd935e72dfaf8b5578819621606e6b5fcbe
-    <!-- Pop-up form -->
     <div id="postPopup" class="popup">
         <form action="/create-thread" method="post">
         <div class="popup-content">
@@ -73,35 +63,49 @@
     </div>
 
     <div id="catPopup" class="popup">
+        <form action="/create-category" method="post">
         <div class="popup-content">
-            <span class="close">&times;</span>
-            <h2>Créer un Post</h2>
+            <span2 class="closed">&times;</span2>
+            <h2>Créer une categories</h2>
             <input type="text" placeholder="Title" name="title" required>
             <br><br>
             <input type="text" placeholder="Description" name="description" required>
             <br><br>
             <button id="submitPost">Créer</button>
         </div>
+        </form>
     </div>
 
     <script>
-        var modal = document.getElementById("catPopup");
-        var btn = document.getElementById("newCatBtn");
-        var modal = document.getElementById("postPopup");
-        var btn = document.getElementById("newPostBtn");
+        var modal1 = document.getElementById("postPopup");
+        var btn1 = document.getElementById("newPostBtn");
         var span = document.getElementsByClassName("close")[0];
-
-        btn.onclick = function() {
-            modal.style.display = "block";
+        var modal2 = document.getElementById("catPopup");
+        var btn2 = document.getElementById("btncat");
+        var span2 = document.getElementsByClassName("closed")[0];
+    
+        btn1.onclick = function() {
+            modal1.style.display = "block";
         }
 
         span.onclick = function() {
-            modal.style.display = "none";
+            modal1.style.display = "none";
         }
 
         window.onclick = function(event) {
             if (event.target == modal) {
-                modal.style.display = "none";
+                modal1.style.display = "none";
+            }
+        }
+        btn2.onclick = function() {
+            modal2.style.display = "block";
+        }
+        span2.onclick = function() {
+            modal2.style.display = "none";
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal2.style.display = "none";
             }
         }
 
