@@ -34,6 +34,7 @@ type Categorie struct {
 	Threads     []Thread
 }
 
+
 type Thread struct {
 	ID            int
 	Title         string
@@ -164,13 +165,15 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	for title, threads := range categoriesMap {
 		categories = append(categories, Categorie{Title: title, Threads: threads})
 	}
-
+	
 	data := struct {
 		User       User
 		Categories []Categorie
+		
 	}{
 		User:       user,
 		Categories: categories,
+		
 	}
 
 	tmpl, err := template.ParseFiles("tmpl/thread.html")
@@ -185,20 +188,31 @@ func ct(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error executing template", http.StatusInternalServerError)
 	}
+
 }
 
 func Profile(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
+	
 	if !user.IsLoggedIn {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+	categories, err := getCategories()
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
+		return
+	}
 
 	data := struct {
-		User User
+		User       User
+		Categories []Categorie
 	}{
-		User: user,
+		User:       user,
+		Categories: categories,
 	}
+
 
 	renderTemplate(w, "tmpl/profile.html", data)
 }
