@@ -170,7 +170,7 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		User       User
 		Categories []Categorie
-		
+
 	}{
 		User:       user,
 		Categories: categories,
