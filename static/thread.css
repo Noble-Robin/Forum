@@ -10,7 +10,7 @@ margin-top: 100px;
 text-align: center;
 color: #333;
 }
-h2 {
+h3 {
 background-color: #007bff;
 color: #fff;
 margin-top: 20px;
@@ -47,7 +47,7 @@ border-radius: 5px;
 resize: vertical;
 margin-bottom: 10px;
 }
-button {
+button.submit {
 background-color: #28a745;
 color: #fff;
 border: none;
@@ -55,7 +55,7 @@ padding: 10px 20px;
 cursor: pointer;
 border-radius: 5px;
 }
-button:hover {
+button:hover.submit {
 background-color: #218838;
 }
 .post-info {

@@ -374,7 +374,7 @@ func CreateCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/category", http.StatusFound)
+	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
 func CreateThread(w http.ResponseWriter, r *http.Request) {

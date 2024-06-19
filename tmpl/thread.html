@@ -6,6 +6,8 @@
     <title>Threads</title>
     <link rel="stylesheet" href="/static/thread.css">
     <link rel="stylesheet" href="/static/navbar.css">
+    <link rel="stylesheet" href="/static/categories.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
 <body>
     <nav class="navbar">
@@ -13,7 +15,7 @@
         <div class="nav-links">
             <ul>
                 <li class="active"><a href="home">Home</a></li>
-                <li class="active"><a href="#" id="newCatbtn">Nouvelle Catégories</a></li>
+                <li class="active"><a href="#" id="btncat">Nouvelle Catégories</a></li>
                 <li class="active"><a href="#" id="newPostBtn">Nouveau Post</a></li>
                 {{if .User.IsLoggedIn}}
                 <li><a href="/logout">Logout</a></li>
@@ -30,9 +32,15 @@
         </div>
         <img src="../img/menu-btn.png" alt="menu hamburger" class="menu-hamburger">
     </nav>
+    <div class="sidebar">
+        <h1>Catégories</h1>
+        {{range .Categories}}
+        <a href=thread/{{.Title}}>{{.Title}}</a>
+        {{end}}
+    </div>
     <h1>Threads</h1>
     {{range .Categories}}
-        <h2>{{.Title}}</h2>
+        <h3>{{.Title}}</h3>
         <ul>
             {{range .Threads}}
                 <li>
@@ -46,11 +54,84 @@
                         <input type="hidden" name="thread_id" value="{{.ID}}">
                         <input type="hidden" name="user_id" value="{{$.User.ID}}">
                         <textarea name="content" placeholder="Votre réponse ici"></textarea>
-                        <button type="submit">Répondre</button>
+                        <button type="submit" name="submit">Répondre</button>
                     </form>
                 </li>
             {{end}}
         </ul>
     {{end}}
+    <div id="postPopup" class="popup">
+        <form action="/create-thread" method="post">
+        <div class="popup-content">
+            <span class="close">&times;</span>
+            <h2>Créer un Post</h2>
+            <label for="category">Choisissez une catégorie:</label>
+            <select name="categorie_title" id="category">
+                {{range .Categories}}
+                <option value="{{.Title}}">{{.Title}}</option>
+                {{end}}
+            </select>
+            <br><br>
+            <label for="postContent">Écrire le post:</label>
+            <textarea name="title" id="postContent" rows="4" cols="50"></textarea>
+            <br><br>
+            <button id="submitPost">Soumettre</button>
+        </div>
+        </form>
+    </div>
+
+    <div id="catPopup" class="popup">
+        <form action="/create-category" method="post">
+        <div class="popup-content">
+            <span2 class="closed">&times;</span2>
+            <h2>Créer une categories</h2>
+            <input type="text" placeholder="Title" name="title" required>
+            <br><br>
+            <input type="text" placeholder="Description" name="description" required>
+            <br><br>
+            <button id="submitPost">Créer</button>
+        </div>
+        </form>
+    </div>
+    <script>
+        var modal1 = document.getElementById("postPopup");
+        var btn1 = document.getElementById("newPostBtn");
+        var span = document.getElementsByClassName("close")[0];
+        var modal2 = document.getElementById("catPopup");
+        var btn2 = document.getElementById("btncat");
+        var span2 = document.getElementsByClassName("closed")[0];
+    
+        btn1.onclick = function() {
+            modal1.style.display = "block";
+        }
+
+        span.onclick = function() {
+            modal1.style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal1.style.display = "none";
+            }
+        }
+        btn2.onclick = function() {
+            modal2.style.display = "block";
+        }
+        span2.onclick = function() {
+            modal2.style.display = "none";
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal2.style.display = "none";
+            }
+        }
+
+        const menuHamburger = document.querySelector(".menu-hamburger"); 
+        const navLinks = document.querySelector(".nav-links");
+
+        menuHamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('mobile-menu');
+        });
+    </script>
 </body>
 </html>
