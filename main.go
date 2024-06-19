@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -45,7 +44,6 @@ type Categorie struct {
 	Post        int
 	Threads     []Thread
 }
-
 
 type Thread struct {
 	ID            int
@@ -226,7 +224,7 @@ func ct(w http.ResponseWriter, r *http.Request) {
 
 func Profile(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
-	
+
 	if !user.IsLoggedIn {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -245,7 +243,6 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 		User:       user,
 		Categories: categories,
 	}
-
 
 	renderTemplate(w, "tmpl/profile.html", data)
 }
@@ -291,37 +288,37 @@ func main() {
 	http.HandleFunc("/update-profile", UpdateProfile)
 	http.HandleFunc("/delete_thread", DeleteThread)
 
-	user := User{
-		ID:             1,
-		Username:       "john_doe",
-		Name:           "John Doe",
-		Email:          "john.doe@example.com",
-		IsLoggedIn:     true,
-		ProfilePicture: "/path/to/profile_picture.jpg",
-	}
-	role := RoleUser
-	if user.Username == "admin" {
-		role = RoleAdministrator
-	} else if user.Username == "moderator" {
-		role = RoleModerator
-	} else if user.Username == "" {
-		role = RoleGuest
-	}
+	// user := User{
+	// 	ID:             1,
+	// 	Username:       "john_doe",
+	// 	Name:           "John Doe",
+	// 	Email:          "john.doe@example.com",
+	// 	IsLoggedIn:     true,
+	// 	ProfilePicture: "/path/to/profile_picture.jpg",
+	// }
+	// role := RoleUser
+	// if user.Username == "admin" {
+	// 	role = RoleAdministrator
+	// } else if user.Username == "moderator" {
+	// 	role = RoleModerator
+	// } else if user.Username == "" {
+	// 	role = RoleGuest
+	// }
 
-	fmt.Printf("User: %s, Role: %d\n", user.Username, role)
+	// fmt.Printf("User: %s, Role: %d\n", user.Username, role)
 
-	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql","report.sql"}
-	for _, file := range files {
-		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = db.Exec(string(sqlFile))
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("File %s executed successfully", file)
-	}
+	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql","report.sql"}
+	// for _, file := range files {
+	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	_, err = db.Exec(string(sqlFile))
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	log.Printf("File %s executed successfully", file)
+	// }
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)

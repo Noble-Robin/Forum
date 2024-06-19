@@ -58,6 +58,17 @@ border-radius: 5px;
 button:hover.submit {
 background-color: #218838;
 }
+button.report {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    }
+    button:hover.submit {
+    background-color: #218838;
+    }
 .post-info {
 font-size: 14px;
 color: #666;
