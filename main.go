@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -23,9 +24,19 @@ type User struct {
 	Username       string
 	Name           string
 	Email          string
+	Role           UserRole
 	IsLoggedIn     bool
 	ProfilePicture string
 }
+
+type UserRole int
+
+const (
+	RoleGuest UserRole = iota
+	RoleUser
+	RoleModerator
+	RoleAdministrator
+)
 
 type Categorie struct {
 	ID          int
@@ -112,69 +123,90 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func ct(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 
-	rows, err := db.Query(`
-        SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
-        FROM threads t 
-        LEFT JOIN users u ON t.user_username = u.username 
-        LEFT JOIN categories c ON t.categorie_title = c.title`)
+	categories, err := getCategories()
 	if err != nil {
-		log.Printf("Error querying threads: %v", err)
-		http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
+		log.Printf("Error retrieving categories: %v", err)
+		http.Error(w, "Error retrieving categories", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
+	// Initialiser une carte de threads par catégorie
 	categoriesMap := make(map[string][]Thread)
-	for rows.Next() {
-		var thread Thread
-		if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt); err != nil {
-			log.Printf("Error scanning threads: %v", err)
-			http.Error(w, "Error reading threads", http.StatusInternalServerError)
-			return
-		}
 
-		postsRows, err := db.Query("SELECT p.id, u.username, p.content, p.created_at FROM posts p JOIN users u ON p.user_id = u.id WHERE thread_id = ?", thread.ID)
+	// Pour chaque catégorie, récupérer les threads associés
+	for _, cat := range categories {
+		categoryTitle := cat.Title
+
+		// Récupérer les threads de la catégorie depuis la base de données
+		rows, err := db.Query(`
+            SELECT t.id, t.title, t.categorie_title, t.user_username, t.created_at 
+            FROM threads t 
+            WHERE t.categorie_title = ?
+        `, categoryTitle)
 		if err != nil {
-			log.Printf("Error querying posts: %v", err)
-			http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+			log.Printf("Error querying threads for category %s: %v", categoryTitle, err)
+			http.Error(w, "Error retrieving threads", http.StatusInternalServerError)
 			return
 		}
-		defer postsRows.Close()
+		defer rows.Close()
 
-		var posts []Post
-		for postsRows.Next() {
-			var post Post
-			if err := postsRows.Scan(&post.ID, &post.Username, &post.Content, &post.CreatedAt); err != nil {
-				log.Printf("Error scanning posts: %v", err)
-				http.Error(w, "Error reading posts", http.StatusInternalServerError)
+		var threads []Thread
+		for rows.Next() {
+			var thread Thread
+			if err := rows.Scan(&thread.ID, &thread.Title, &thread.CategoryTitle, &thread.UserUsername, &thread.CreatedAt); err != nil {
+				log.Printf("Error scanning threads for category %s: %v", categoryTitle, err)
+				http.Error(w, "Error reading threads", http.StatusInternalServerError)
 				return
 			}
-			posts = append(posts, post)
+
+			// Récupérer les posts pour chaque thread
+			postsRows, err := db.Query(`
+                SELECT p.id, u.username, p.content, p.created_at 
+                FROM posts p 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.thread_id = ?
+            `, thread.ID)
+			if err != nil {
+				log.Printf("Error querying posts for thread %d: %v", thread.ID, err)
+				http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+				return
+			}
+			defer postsRows.Close()
+
+			var posts []Post
+			for postsRows.Next() {
+				var post Post
+				if err := postsRows.Scan(&post.ID, &post.Username, &post.Content, &post.CreatedAt); err != nil {
+					log.Printf("Error scanning posts for thread %d: %v", thread.ID, err)
+					http.Error(w, "Error reading posts", http.StatusInternalServerError)
+					return
+				}
+				posts = append(posts, post)
+			}
+			thread.Posts = posts
+
+			threads = append(threads, thread)
 		}
-		thread.Posts = posts
 
-		categoriesMap[thread.CategoryTitle] = append(categoriesMap[thread.CategoryTitle], thread)
+		categoriesMap[categoryTitle] = threads
 	}
 
-	if err = rows.Err(); err != nil {
-		log.Printf("Error iterating over rows: %v", err)
-		http.Error(w, "Error reading threads", http.StatusInternalServerError)
-		return
+	var categoriesData []Categorie
+	for _, cat := range categories {
+		categoriesData = append(categoriesData, Categorie{
+			ID:          cat.ID,
+			Title:       cat.Title,
+			Description: cat.Description,
+			Threads:     categoriesMap[cat.Title],
+		})
 	}
 
-	var categories []Categorie
-	for title, threads := range categoriesMap {
-		categories = append(categories, Categorie{Title: title, Threads: threads})
-	}
-	
 	data := struct {
 		User       User
 		Categories []Categorie
-
 	}{
 		User:       user,
-		Categories: categories,
-		
+		Categories: categoriesData,
 	}
 
 	tmpl, err := template.ParseFiles("tmpl/thread.html")
@@ -188,8 +220,8 @@ func ct(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error executing template: %v", err)
 		http.Error(w, "Error executing template", http.StatusInternalServerError)
+		return
 	}
-
 }
 
 func Profile(w http.ResponseWriter, r *http.Request) {
@@ -259,18 +291,37 @@ func main() {
 	http.HandleFunc("/update-profile", UpdateProfile)
 	http.HandleFunc("/delete_thread", DeleteThread)
 
-	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
-	// for _, file := range files {
-	// 	sqlFile, err := ioutil.ReadFile("sqlite/" + file)
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	_, err = db.Exec(string(sqlFile))
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	log.Printf("File %s executed successfully", file)
-	// }
+	user := User{
+		ID:             1,
+		Username:       "john_doe",
+		Name:           "John Doe",
+		Email:          "john.doe@example.com",
+		IsLoggedIn:     true,
+		ProfilePicture: "/path/to/profile_picture.jpg",
+	}
+	role := RoleUser
+	if user.Username == "admin" {
+		role = RoleAdministrator
+	} else if user.Username == "moderator" {
+		role = RoleModerator
+	} else if user.Username == "" {
+		role = RoleGuest
+	}
+
+	fmt.Printf("User: %s, Role: %d\n", user.Username, role)
+
+	files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql","report.sql"}
+	for _, file := range files {
+		sqlFile, err := ioutil.ReadFile("sqlite/" + file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = db.Exec(string(sqlFile))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("File %s executed successfully", file)
+	}
 
 	fmt.Println("Server started at http://localhost:8081/home")
 	http.ListenAndServe(":8081", nil)
@@ -457,6 +508,7 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteThread(w http.ResponseWriter, r *http.Request) {
+
 	sessionID, err := r.Cookie("session_id")
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -470,6 +522,7 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	threadID := r.FormValue("thread_id")
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Printf("Error beginning transaction: %v", err)
@@ -500,11 +553,60 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("UPDATE categories SET post = post - 1 WHERE title = (SELECT categorie_title FROM threads WHERE id = ?)", threadID)
+	_, err = tx.Exec("DELETE FROM comments WHERE thread_id = ?", threadID)
 	if err != nil {
 		tx.Rollback()
-		log.Printf("Error updating post count: %v", err)
-		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		log.Printf("Error deleting comments: %v", err)
+		http.Error(w, "Error deleting comments", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/thread", http.StatusFound)
+}
+
+func ReportThread(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	threadID := r.FormValue("thread_id")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var dbUsername string
+	err = tx.QueryRow("SELECT user_username FROM threads WHERE id = ?", threadID).Scan(&dbUsername)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving thread owner: %v", err)
+		http.Error(w, "Error retrieving thread owner", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO reports (reporter_username, thread_id) VALUES (?, ?)", username, threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error inserting report: %v", err)
+		http.Error(w, "Error reporting thread", http.StatusInternalServerError)
 		return
 	}
 
@@ -556,6 +658,100 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		tx.Rollback()
 		log.Printf("Error updating post count: %v", err)
 		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
+}
+
+func DeletePost(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	postID := r.FormValue("post_id")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var threadID string
+	err = tx.QueryRow("SELECT thread_id FROM posts WHERE id = ? AND user_id = ?", postID, user.ID).Scan(&threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving post information: %v", err)
+		http.Error(w, "Error retrieving post information", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("DELETE FROM posts WHERE id = ? AND user_id = ?", postID, user.ID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error deleting post: %v", err)
+		http.Error(w, "Error deleting post", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("UPDATE categories SET post = post - 1 WHERE title = (SELECT categorie_title FROM threads WHERE id = ?)", threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error updating post count: %v", err)
+		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
+}
+
+func ReportPost(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromSession(r)
+	if !user.IsLoggedIn {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	postID := r.FormValue("post_id")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var threadID string
+	err = tx.QueryRow("SELECT thread_id FROM posts WHERE id = ?", postID).Scan(&threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving post information: %v", err)
+		http.Error(w, "Error retrieving post information", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO reports (reporter_username, post_id) VALUES (?, ?)", user.Username, postID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error inserting report: %v", err)
+		http.Error(w, "Error reporting post", http.StatusInternalServerError)
 		return
 	}
 
@@ -621,6 +817,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	renderTemplate(w, "tmpl/profile.html", data)
 }
+
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
 	t, err := template.ParseFiles(tmpl)
 	if err != nil {
