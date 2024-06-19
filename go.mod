@@ -7,5 +7,5 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
-	github.com/Noble-Robin/Forum v0.0.0-20211013163447-3b3b3b3b3b3b
+	golang.org/x/crypto v0.24.0 // indirect
 )

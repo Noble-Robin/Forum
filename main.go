@@ -10,6 +10,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -242,6 +243,7 @@ func main() {
 	http.HandleFunc("/create-category", CreateCategories)
 	http.HandleFunc("/profile", Profile)
 	http.HandleFunc("/update-profile", UpdateProfile)
+	http.HandleFunc("/delete_thread", DeleteThread)
 
 	// files := []string{"User.sql", "thread.sql", "post.sql", "Categorie.sql"}
 	// for _, file := range files {
@@ -291,7 +293,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.Exec("INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)", username, name, email, password)
+	hashedPassword, err := HashPassword(password)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec("INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)", username, name, email, hashedPassword)
 	if err != nil {
 		http.Error(w, "Error inserting user into the database", http.StatusInternalServerError)
 		return
@@ -299,24 +307,25 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
-// func HashPassword(password string) (string, error) {
-// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-// 	return string(bytes), err
-// }
-// func CheckPasswordHash(password, hash string) bool {
-// 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-// 	return err == nil
-// }
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
 
 func connectDB(username, password string) bool {
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND password = ?", username, password).Scan(&count)
+	var hashedPassword string
+	err := db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&hashedPassword)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	return count > 0
+	return CheckPasswordHash(password, hashedPassword)
 }
 
 func verifDB(username, email string) bool {
@@ -416,6 +425,68 @@ func CreateThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec("UPDATE categories SET post = post + 1 WHERE title = ?", categoryTitle)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error updating post count: %v", err)
+		http.Error(w, "Error updating post count", http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Printf("Error committing transaction: %v", err)
+		http.Error(w, "Error committing transaction", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/thread", http.StatusFound)
+}
+
+func DeleteThread(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := r.Cookie("session_id")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	username, ok := sessions[sessionID.Value]
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	threadID := r.FormValue("thread_id")
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Error beginning transaction: %v", err)
+		http.Error(w, "Error beginning transaction", http.StatusInternalServerError)
+		return
+	}
+
+	var dbUsername string
+	err = tx.QueryRow("SELECT user_username FROM threads WHERE id = ?", threadID).Scan(&dbUsername)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error retrieving thread owner: %v", err)
+		http.Error(w, "Error retrieving thread owner", http.StatusInternalServerError)
+		return
+	}
+
+	if dbUsername != username {
+		tx.Rollback()
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	_, err = tx.Exec("DELETE FROM threads WHERE id = ?", threadID)
+	if err != nil {
+		tx.Rollback()
+		log.Printf("Error deleting thread: %v", err)
+		http.Error(w, "Error deleting thread", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("UPDATE categories SET post = post - 1 WHERE title = (SELECT categorie_title FROM threads WHERE id = ?)", threadID)
 	if err != nil {
 		tx.Rollback()
 		log.Printf("Error updating post count: %v", err)
