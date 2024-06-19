@@ -551,23 +551,18 @@ func CreatePost(w http.ResponseWriter, r *http.Request) { //create new comment
 }
 
 func DeleteThread(w http.ResponseWriter, r *http.Request) {
-	// Vérification si l'utilisateur est authentifié
 	sessionID, err := r.Cookie("session_id")
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 
-	// Récupération du nom d'utilisateur à partir de la session
 	username, ok := sessions[sessionID.Value]
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 
-	// Récupération du rôle de l'utilisateur à partir de votre système d'authentification
-	// Par exemple, si vous avez un modèle User avec un champ Role, vous pouvez vérifier ici
-	// si l'utilisateur a le rôle d'administrateur.
 	user, err := getUserByUsername(username)
 	if err != nil {
 		log.Printf("Error retrieving user: %v", err)
@@ -575,7 +570,6 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Vérification si l'utilisateur est administrateur
 	if user.Role != "admin" {
 		// Si l'utilisateur n'est pas un administrateur, vérifier s'il est l'auteur du thread
 		threadID := r.FormValue("thread_id")
@@ -603,7 +597,6 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// L'utilisateur est l'auteur du thread, continuer avec la suppression
 		_, err = tx.Exec("DELETE FROM threads WHERE id = ?", threadID)
 		if err != nil {
 			tx.Rollback()
@@ -627,12 +620,10 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Redirection après suppression réussie
 		http.Redirect(w, r, "/thread", http.StatusFound)
 		return
 	}
 
-	// Si l'utilisateur est administrateur, suppression directe du thread
 	threadID := r.FormValue("thread_id")
 
 	tx, err := db.Begin()
@@ -665,11 +656,9 @@ func DeleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirection après suppression réussie
 	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
-// DeletePost handles post deletion.
 func DeletePost(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
@@ -721,7 +710,6 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/thread?thread_id=%s", threadID), http.StatusFound)
 }
 
-// ReportThread handles thread reporting.
 func ReportThread(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := r.Cookie("session_id")
 	if err != nil {
@@ -762,7 +750,6 @@ func ReportThread(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/thread", http.StatusFound)
 }
 
-// ReportPost handles post reporting.
 func ReportPost(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromSession(r)
 	if !user.IsLoggedIn {
@@ -951,6 +938,27 @@ func getUserPosts(username string, user User) ([]Post, error) { // grab all  com
 
 	return posts, nil
 }
+func getUserByUsername(username string) (*User, error) {
+	user := &User{}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("error beginning transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	err = tx.QueryRow("SELECT id, username, role FROM users WHERE username = ?", username).
+		Scan(&user.ID, &user.Username, &user.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving user: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("error committing transaction: %v", err)
+	}
+
+	return user, nil
+}
 
 func AdminPage(w http.ResponseWriter, r *http.Request) { //for admin can promote or remote right of an user
 	user := getUserFromSession(r)
@@ -1042,7 +1050,6 @@ func main() {
 	http.HandleFunc("/report-post", ReportPost)
 	http.HandleFunc("/admin", AdminPage)
 	// http.HandleFunc("/view-profile", ViewProfile)
-	http.HandleFunc("/handle-post-action", HandlePostAction)
 
 	// init if not already launch
 	// files := []string{"report.sql", "User.sql", "thread.sql", "post.sql", "Categorie.sql"} //"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql",
@@ -1060,50 +1067,4 @@ func main() {
 
 	fmt.Println("Server started at http://localhost:8081/home") //landing page
 	http.ListenAndServe(":8081", nil)
-}
-
-func HandlePostAction(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromSession(r)
-	if !user.IsLoggedIn {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	action := r.FormValue("action")
-	switch action {
-	case "reply":
-		CreatePost(w, r)
-	case "report":
-		ReportPost(w, r)
-	case "delete":
-		DeletePost(w, r)
-	default:
-		http.Error(w, "Invalid action", http.StatusBadRequest)
-	}
-}
-
-func getUserByUsername(username string) (*User, error) {
-	// Initialisez la structure User pour stocker les informations de l'utilisateur
-	user := &User{}
-
-	// Démarrez une transaction avec la base de données
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("error beginning transaction: %v", err)
-	}
-	defer tx.Rollback() // Rollback si une erreur se produit avant le commit
-
-	// Exécutez la requête pour récupérer l'utilisateur en fonction du nom d'utilisateur
-	err = tx.QueryRow("SELECT id, username, role FROM users WHERE username = ?", username).
-		Scan(&user.ID, &user.Username, &user.Role)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving user: %v", err)
-	}
-
-	// Commit la transaction si tout s'est bien passé
-	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("error committing transaction: %v", err)
-	}
-
-	return user, nil
 }
