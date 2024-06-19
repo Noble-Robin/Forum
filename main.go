@@ -287,9 +287,7 @@ func main() {
 	http.HandleFunc("/delete-post", DeletePost)
 	http.HandleFunc("/report-post", ReportPost)
 	http.HandleFunc("/admin", AdminPage)
-	// http.HandleFunc("/promote", promoteHandler)
-	// http.HandleFunc("/demote", demoteHandler)
-	// http.HandleFunc("/admin", adminPageHandler)
+	http.HandleFunc("/view-profile", ViewProfile)
 
 	// files := []string{"report.sql", "User.sql", "thread.sql", "post.sql", "Categorie.sql"} //"User.sql", "thread.sql", "post.sql", "Categorie.sql", "update.sql",
 	// for _, file := range files {
@@ -921,4 +919,27 @@ func getUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func ViewProfile(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	if username == "" {
+		http.Error(w, "Username parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	var user User
+	err := db.QueryRow("SELECT id, username, name, email, role, profile_picture FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role, &user.ProfilePicture)
+	if err != nil {
+		log.Printf("Error retrieving user profile: %v", err)
+		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		User User
+	}{
+		User: user,
+	}
+	renderTemplate(w, "tmpl/viewprofile.html", data)
 }
