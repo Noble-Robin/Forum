@@ -1,87 +1,109 @@
 body{
-font-family: Arial, sans-serif;
-line-height: 1.6;
-background-color: #f0f0f0;
-padding: 0;
-margin: 0;
-}
-h1 {
-margin-top: 100px;
-text-align: center;
-color: #333;
-}
-h3 {
-background-color: #007bff;
-color: #fff;
-margin-top: 20px;
-border-radius: 5px 5px 0 0;
-}
-ul {
-list-style-type: none;
-padding-left: 0;
-}
-li {
-margin-bottom: 10px;
-padding: 10px;
-
-}
-.thread-header {
-border-bottom: 1px solid #ddd;
-padding-bottom: 5px;
-margin-bottom: 10px;
-}
-.post-list {
-padding-left: 20px;
-}
-.post-content {
-margin-bottom: 5px;
-}
-form {
-margin-top: 10px;
-}
-textarea {
-width: 100%;
-height: 80px;
-border: 1px solid #ddd;
-border-radius: 5px;
-resize: vertical;
-margin-bottom: 10px;
-}
-button.submit {
-background-color: #007bff;
-color: #fff;
-border: none;
-padding: 10px 20px;
-cursor: pointer;
-border-radius: 5px;
-}
-button:hover.submit {
-background-color: #015dbe;
-}
-button.report {
-    background-color: #ee2929;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f0f0f0;
+    padding: 0;
+    margin: 0;
+    }
+    h1 {
+    margin-top: 100px;
+    text-align: center;
+    color: #333;
+    }
+    h3 {
+    background-color: #007bff;
+    color: #fff;
+    margin-top: 20px;
+    border-radius: 5px 5px 0 0;
+    }
+    ul {
+    list-style-type: none;
+    padding-left: 0;
+    }
+    li {
+    margin-bottom: 10px;
+    padding: 10px;
+    
+    }
+    .thread-header {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    }
+    .post-list {
+    padding-left: 20px;
+    }
+    .post-content {
+    margin-bottom: 5px;
+    }
+    form {
+    margin-top: 10px;
+    }
+    textarea {
+    width: 100%;
+    height: 80px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: vertical;
+    margin-bottom: 10px;
+    }
+    button.submit {
+    background-color: #007bff;
     color: #fff;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
     border-radius: 5px;
-}
-button:hover.report {
-background-color: #b92020;
-}
-button.delete {
-    background-color: #ee2929;
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-button:hover.delete {
-background-color: #b92020;
-}
-.post-info {
-font-size: 14px;
-color: #666;
-margin-top: 5px;
-}
+    }
+    button:hover.submit {
+    background-color: #015dbe;
+    }
+    button.report-thread {
+        background-color: #ee2929;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    button:hover.report-thread {
+    background-color: #b92020;
+    }
+    button.delete-thread {
+        background-color: #ee2929;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    button:hover.delete-thread {
+    background-color: #b92020;
+    }
+    .post-info {
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
+    }
+    button.report-post {
+        background-color: #ee2929;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    button:hover.report-post {
+    background-color: #b92020;
+    }
+    button.delete-post {
+        background-color: #ee2929;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    button:hover.delete-post {
+    background-color: #b92020;
+    }
