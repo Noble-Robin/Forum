@@ -860,7 +860,7 @@ func getUsers() ([]User, error) { // grab all users
 	var users []User
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.ID, &user.Username, &user.Name, &user.Email, &user.Role); err != nil {
+	err := db.QueryRow("SELECT id, name, description,price,image_url FROM product WHERE name = ?", Product).Scan(&Product.ID, &Product.Name, &Product.Description, &Product.Price, &Product.ImageURL)
 			return nil, fmt.Errorf("error scanning user: %v", err)
 		}
 		users = append(users, user)
